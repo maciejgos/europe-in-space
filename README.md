@@ -114,7 +114,8 @@ Europe in Space is a personal project being developed incrementally.
 
 The first milestone focuses on demonstrating the platform's core experience.
 
-- [ ] Set up the Astro application and Cloudflare deployment.
+- [x] Set up the Astro application and Cloudflare Worker configuration.
+- [ ] Provision Cloudflare resources and deploy the application.
 - [ ] Create the initial design system and responsive layout.
 - [ ] Implement the first European mission detail page.
 - [ ] Integrate CelesTrak orbital data.
@@ -179,20 +180,18 @@ Selected lessons and workflows may be shared through project documentation and t
 
 ## 💻 Development
 
-The project is in early development.
+The scaffold requires Node.js 22.23.4 or newer and pnpm 12.21.0 (see `packageManager` in `package.json`).
 
-Local setup instructions will be added once the application scaffold and development commands have been finalized.
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
 
-The intended development workflow uses:
+Open the local URL printed by Astro. Other checks are available with `pnpm check`, `pnpm test`, `pnpm build`, and `pnpm test:e2e`. Install the browser for the end-to-end test once with `pnpm exec playwright install chromium`.
 
-- Node.js and pnpm.
-- Astro development server.
-- TypeScript type checking.
-- Vitest for unit testing.
-- Playwright for browser testing.
-- Wrangler for Cloudflare development and deployment.
+For a local preview of the Worker and built static assets, run `pnpm build` followed by `pnpm exec wrangler dev`. The Worker reserves `/api/*`, which currently returns 404. D1, scheduled ingestion, orbital calculations, and the tracker have not yet been implemented; deployment requires Cloudflare configuration and provisioning.
 
-The application architecture aims to separate domain logic, data source integrations and infrastructure-specific implementations.
+The application separates portable domain logic, data source integrations, and infrastructure-specific implementations as described in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## 🤝 Contributing
 
