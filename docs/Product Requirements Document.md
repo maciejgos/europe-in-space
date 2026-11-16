@@ -12,6 +12,8 @@
 
 ---
 
+This PRD defines product scope and acceptance. [First Orbit requirements](#18-first-engineering-milestone--first-orbit) govern the first milestone. [MVP requirements](#16-mvp-definition) describe the broader release. See the [system architecture](../ARCHITECTURE.md), [First Orbit implementation and verification plan](Technical%20Design%20Document.md), and [accepted architecture decisions](decisions/README.md) for their respective details.
+
 # 1. Executive Summary
 
 **Europe in Space** is an independent, interactive web platform dedicated to exploring Europe's activities in space.
@@ -306,11 +308,11 @@ This model is illustrative and subject to refinement during technical design.
 - **FR-SAT-004:** Support spacecraft selection.
 - **FR-SAT-005:** Display satellite name and catalog identifier.
 - **FR-SAT-006:** Show predicted orbital paths.
-- **FR-SAT-007:** Display ground tracks where supported.
+- **FR-SAT-007:** Display ground tracks where supported in a later milestone.
 - **FR-SAT-008:** Display orbital element epoch and retrieval timestamps.
 - **FR-SAT-009:** Explain the difference between predicted positions and live telemetry.
 - **FR-SAT-010:** Provide accessible alternatives to the 3D visualization.
-- **FR-SAT-011:** Handle unavailable or stale orbital elements gracefully.
+- **FR-SAT-011:** Show a stale-data warning while the prediction remains within its permitted display window. At the cutoff, hide the prediction and show an explanation with the available source and timestamps. Keep the mission information accessible when orbital data is unavailable.
 
 ### Initial Coverage
 
@@ -644,7 +646,7 @@ Infrastructure-specific code must remain isolated so the application can later m
 | Initial hosting | Cloudflare Workers Static Assets |
 | API | Cloudflare Workers |
 | Initial content storage | Markdown / MDX / JSON |
-| Database when required | Cloudflare D1 |
+| First Orbit orbital storage | Cloudflare D1 |
 | Scheduled jobs | Cloudflare Cron Triggers |
 | Validation | Zod |
 | Unit testing | Vitest |
@@ -692,7 +694,7 @@ Europe in Space
     └── Cloudflare
         ├── Workers
         ├── Static Assets
-        ├── D1 (optional)
+        ├── D1 (orbital data)
         └── Cron Triggers
 ```
 
@@ -700,175 +702,13 @@ The application core must not import Cloudflare-specific runtime dependencies.
 
 ## 10.4 Initial Repository Structure
 
-```text
-europeinspace/
-├── apps/
-│   └── web/
-│       ├── src/
-│       │   ├── pages/
-│       │   ├── components/
-│       │   ├── layouts/
-│       │   ├── styles/
-│       │   └── lib/
-│       └── astro.config.mjs
-│
-├── packages/
-│   ├── core/
-│   │   ├── missions/
-│   │   ├── satellites/
-│   │   └── models/
-│   │
-│   ├── data-sources/
-│   │   └── celestrak/
-│   │
-│   └── data/
-│       ├── repositories/
-│       └── schemas/
-│
-├── infrastructure/
-│   └── cloudflare/
-│
-├── content/
-│   └── missions/
-│
-├── .github/
-│   └── workflows/
-│
-└── README.md
-```
-
-This is a target organization, not a requirement to create every directory immediately.
-
-For the first milestone, the repository may use a simpler structure. Separate packages should only be introduced when they provide meaningful architectural boundaries.
-
-Vercel-specific implementation code must not be created until needed.
+First Orbit uses one application package and one deployment unit. The [architecture repository layout](../ARCHITECTURE.md#7-repository-structure) describes the intended structure. [ADR-013](decisions/013-single-repository-modular-monolith.md) records the decision.
 
 ---
 
 # 11. Architecture Decision Records
 
-## ADR-001 — Server-Side Data Aggregation
-
-**Status:** Accepted
-
-External datasets should be retrieved through controlled ingestion processes instead of unrestricted browser requests, where the provider's policies and rate limits make that appropriate.
-
-**Rationale:**
-- Protect provider quotas.
-- Improve availability.
-- Support data validation.
-- Centralize provenance.
-
-## ADR-002 — Client-Side Orbital Computation
-
-**Status:** Accepted
-
-Satellite position calculations will run in the browser using SGP4-compatible software.
-
-**Rationale:**
-- Reduce server costs.
-- Avoid continuous backend requests.
-- Improve interactivity.
-- Support Cloudflare Free limits.
-
-## ADR-003 — Provenance-First Data Model
-
-**Status:** Accepted
-
-Important externally sourced records must retain source references, timestamps and usage information.
-
-**Rationale:**
-- Scientific transparency.
-- Data quality.
-- Legal compliance.
-- Easier troubleshooting.
-
-## ADR-004 — Modular Feature Boundaries
-
-**Status:** Accepted
-
-Mission discovery, satellite tracking, imagery, observatories and launches should remain logically separated.
-
-**Rationale:**
-- Maintainability.
-- Independent feature evolution.
-- Testability.
-
-## ADR-005 — Avoid Premature Infrastructure Complexity
-
-**Status:** Accepted
-
-Begin with a modular application and lightweight scheduled tasks.
-
-Do not introduce Kubernetes, microservices, distributed queues or complex orchestration without a demonstrated requirement.
-
-## ADR-006 — Cloudflare Free-First Architecture
-
-**Status:** Accepted
-
-### Decision
-
-Europe in Space will initially operate on Cloudflare's free-tier services.
-
-### Requirements
-
-- No paid infrastructure dependency for the MVP.
-- No mandatory paid database.
-- No mandatory paid mapping or globe service.
-- No server request for every satellite position update.
-- Prefer static generation and client-side computation.
-- Cache public datasets.
-- Keep Worker execution lightweight.
-- Monitor relevant platform quotas.
-- Avoid large-scale backend imagery processing.
-
-### Consequences
-
-The initial architecture must support graceful degradation when data sources or platform quotas become temporarily unavailable.
-
-**Acceptance criterion:** The complete MVP can be deployed without requiring paid Cloudflare services or paid third-party data infrastructure.
-
-## ADR-007 — Cloud Portability
-
-**Status:** Accepted
-
-### Decision
-
-Europe in Space must separate application functionality from hosting-specific infrastructure.
-
-### Requirements
-
-- Domain models must be provider-independent.
-- Data source integrations must not require Cloudflare APIs.
-- Business logic must remain portable.
-- Repository interfaces must isolate persistence.
-- Scheduling implementation must remain replaceable.
-- Environment configuration must be separated from domain logic.
-- Database schema and migrations must be maintained in source control.
-- Browser-based visualizations must be independent of the hosting platform.
-
-### Consequences
-
-A future migration to Vercel may require replacing deployment adapters, persistent storage and scheduled jobs.
-
-It must not require rewriting mission logic, satellite calculations or core frontend experiences.
-
-**Important:** Portability does not require creating multiple infrastructure implementations in the MVP.
-
-## ADR-008 — Static Content Before Database
-
-**Status:** Accepted
-
-Curated content should initially be stored in version-controlled Markdown, MDX or JSON files.
-
-Cloudflare D1 will be introduced only when persistent structured queries or automated ingestion requirements justify it.
-
-**Rationale:**
-- Lower complexity.
-- Better portability.
-- Easier review.
-- No database dependency for the initial site.
-- Simpler free-tier operation.
+The [ADR index](decisions/README.md) lists current decisions and their status. Product requirements for performance, availability, and cost appear in this PRD. The architecture describes the system and the technical design defines implementation and verification.
 
 ---
 
@@ -884,13 +724,13 @@ Use version-controlled content for:
 - Image references.
 - Curated links.
 
-Use small cached JSON datasets for satellite data where appropriate.
+Serve First Orbit orbital datasets as JSON through the Worker API from D1.
 
-## 12.2 Stage 2 — Cloudflare D1
+## 12.2 Cloudflare D1
 
-Introduce D1 for requirements such as:
+First Orbit uses D1 for the latest validated orbital dataset per spacecraft and ingestion health. Publish only a newer orbital epoch through a single conditional write. See [ADR-016](decisions/016-d1-for-first-orbit-orbital-persistence.md).
 
-- Persisted ingestion metadata.
+Later D1 uses may include:
 - Structured catalog queries.
 - Larger satellite datasets.
 - Relationships that are difficult to maintain in static files.
@@ -934,12 +774,12 @@ The application will deploy to Cloudflare Workers with static asset support.
 - Support ingestion-related operations.
 
 **Cron Triggers**
-- Fetch updated orbital datasets.
+- Fetch updated orbital datasets on a configurable deployment schedule, initially daily in UTC. Validate the initial cadence for the selected spacecraft.
 - Refresh suitable external metadata.
 - Execute lightweight synchronization tasks.
 
-**D1 — Optional**
-- Store structured information that requires persistence.
+**D1**
+- Store the latest validated orbital dataset per spacecraft.
 
 ## 13.2 Cost Constraints
 
@@ -1052,6 +892,7 @@ Disadvantages:
 - Satellite rendering must limit unnecessary objects and calculations.
 - Static content should be served through Cloudflare's edge infrastructure.
 - External provider latency must not unnecessarily block cached content.
+- First Orbit must pass the mobile readiness, HTML fallback, and hosting usage checks defined in the technical design before launch.
 
 ## 15.2 Reliability
 
@@ -1191,13 +1032,13 @@ The MVP is complete when:
 
 Delivery follows milestones rather than mandatory commercial deadlines.
 
-## Phase 0 — Foundation
+## Foundation
 
 **Objective:** Establish the project.
 
 Deliverables:
 - Confirm domain and branding.
-- Create GitHub repository.
+- Scaffold the application in the existing repository.
 - Initialize Astro and TypeScript.
 - Configure styling and design tokens.
 - Establish CI.
@@ -1205,7 +1046,11 @@ Deliverables:
 - Publish a minimal landing page.
 - Verify initial data licenses.
 
-## Phase 1 — Mission Explorer
+## First Orbit
+
+Deliver the one-mission, one-spacecraft experience defined in §18 before expanding the mission catalog. The [technical design](Technical%20Design%20Document.md#23-implementation-sequence) defines the implementation order.
+
+## Mission Explorer expansion
 
 **Objective:** Deliver the first useful information experience.
 
@@ -1216,20 +1061,16 @@ Deliverables:
 - Mission detail pages.
 - Source attribution.
 
-## Phase 2 — Satellite Tracker
+## Satellite Tracker expansion
 
-**Objective:** Deliver the primary interactive feature.
+**Objective:** Extend the tracker from First Orbit to more supported spacecraft and missions.
 
 Deliverables:
-- CelesTrak integration.
-- Cached orbital elements.
-- Browser-side SGP4.
-- CesiumJS visualization.
 - Spacecraft selection.
-- Orbital paths.
-- Mission-to-spacecraft navigation.
+- Additional verified spacecraft and mission links.
+- Ground tracks where supported.
 
-## Phase 3 — Imagery and Observatories
+## Imagery and Observatories
 
 **Objective:** Expand exploration beyond satellite tracking.
 
@@ -1240,7 +1081,7 @@ Deliverables:
 - Observatory pages.
 - Mission-related imagery.
 
-## Phase 4 — Launches and Earth Observation
+## Launches and Earth Observation
 
 **Objective:** Introduce richer mission and Earth data.
 
@@ -1250,7 +1091,7 @@ Deliverables:
 - Selected Copernicus imagery.
 - Image metadata and acquisition dates.
 
-## Phase 5 — Experimental Capabilities
+## Experimental Capabilities
 
 Potential features:
 - Deep-space mission tracking.
@@ -1284,7 +1125,7 @@ Required components:
 2. One verified mission record.
 3. One spacecraft record.
 4. CelesTrak data connector.
-5. Orbital data cache.
+5. D1 orbital storage with conditional publication by epoch.
 6. SGP4 propagation.
 7. 3D Earth visualization.
 8. Source timestamps.
@@ -1307,7 +1148,7 @@ Required components:
 - Valid public orbital elements are loaded.
 - Predicted positions are displayed.
 - Calculations are tested against an independent reference for a defined epoch.
-- The interface displays timestamps and limitations.
+- The interface displays timestamps and limitations. It warns at the validated stale-data threshold and hides predictions at the cutoff, including while the tracker stays open.
 - The application works in current desktop browsers.
 - Mobile users receive a usable experience or accessible fallback.
 - No paid hosting dependencies are required.
@@ -1407,7 +1248,7 @@ Requirements:
 
 The source code should be publicly available under an appropriate open-source license.
 
-The final license must be selected after reviewing project dependencies and third-party content.
+Select the license after reviewing project dependencies and include it in the repository before the first public code release. Record third-party content rights and attribution separately.
 
 The project code license does not automatically apply to external imagery or scientific datasets.
 
@@ -1437,7 +1278,7 @@ A consistent classification policy is needed.
 
 ## OQ-002 — Initial Dataset
 
-Which exact spacecraft will be included in the First Orbit milestone?
+Compare Sentinel-2A, Sentinel-2B, and Sentinel-2C. Choose one after verifying its catalog identity, usable orbital data, publication terms, and prediction accuracy under the planned refresh cadence.
 
 Identifiers and current orbital-data availability must be validated.
 
@@ -1465,7 +1306,7 @@ Which free or low-cost monitoring tools should be used for deployment and ingest
 
 ## OQ-007 — Imagery Delivery
 
-Should the platform reference remote imagery, maintain curated local thumbnails or use an object store?
+First Orbit uses a locally hosted Earth texture for the globe, subject to asset checks in [ADR-014](decisions/014-token-free-3d-globe.md). For later imagery collections, should the platform reference remote imagery, maintain curated local thumbnails or use an object store?
 
 The decision must account for licensing, caching and provider restrictions.
 

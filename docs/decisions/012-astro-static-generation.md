@@ -11,7 +11,7 @@ Most initial Europe in Space content is editorial: mission descriptions, project
 
 ## Decision
 
-Use **Astro in static-output mode** for content pages and routes in First Orbit. Load React and CesiumJS only for interactive surfaces that need them. Deploy the static website, lightweight Worker API, and scheduled ingestion together in one Cloudflare Workers Static Assets deployment. Serve mutable orbital elements from Cloudflare KV through the Worker API.
+Use **Astro in static-output mode** for content pages and routes in First Orbit. Load React and CesiumJS only for interactive surfaces that need them. Deploy the static website, lightweight Worker API, and scheduled ingestion together in one Cloudflare Workers Static Assets deployment. Serve mutable orbital elements through the Worker API using the store specified in [ADR-016](016-d1-for-first-orbit-orbital-persistence.md).
 
 - Build mission pages from source-controlled content collections.
 - Validate structured metadata at build time.

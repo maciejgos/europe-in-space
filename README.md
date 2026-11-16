@@ -73,7 +73,7 @@ Europe in Space is being designed as a **static-first, cloud-portable web applic
 | Orbital calculations | satellite.js |
 | Hosting | Cloudflare Workers Static Assets |
 | Serverless API | Cloudflare Workers |
-| Data caching | Cloudflare KV |
+| Orbital data storage | Cloudflare D1 |
 | Scheduled ingestion | Cloudflare Cron Triggers |
 | Testing | Vitest, Playwright |
 | CI/CD | GitHub Actions |

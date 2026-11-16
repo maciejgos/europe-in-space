@@ -2,9 +2,11 @@
 
 **Status:** Proposed architecture  
 **Last updated:** November 15, 2026  
-**Related documents:** Product Requirements Document v1.1 · First Orbit Technical Design Document v1.0  
+**Related documents:** [Product Requirements Document](docs/Product%20Requirements%20Document.md) · [First Orbit Technical Design Document](docs/Technical%20Design%20Document.md) · [Architecture decisions](docs/decisions/README.md)\
 **Initial deployment:** Cloudflare Free  
 **Future deployment option:** Vercel
+
+This document describes the system structure and its boundaries. The PRD defines product scope and acceptance, the technical design defines implementation and verification, and the individual ADRs govern recorded architecture decisions.
 
 ## 1. Overview
 
@@ -139,7 +141,7 @@ For First Orbit, CelesTrak is the primary automated external data integration. M
 | Validation | Zod | Runtime schema validation |
 | Static hosting | Cloudflare Workers Static Assets | Website and frontend assets |
 | API | Cloudflare Workers | Cached data endpoints |
-| Data cache | Cloudflare KV | Orbital elements and ingestion metadata |
+| Data cache | Cloudflare D1 | Orbital elements and ingestion metadata |
 | Scheduling | Cloudflare Cron Triggers | Periodic data refresh |
 | Unit testing | Vitest | Domain and application tests |
 | Browser testing | Playwright | End-to-end testing |
@@ -203,11 +205,11 @@ flowchart TB
     subgraph Cloudflare["Cloudflare"]
         Static["Workers Static Assets"]
         API["Workers API"]
-        KV[("Workers KV")]
+        D1[("Cloudflare D1")]
         Cron["Cron Trigger"]
 
-        API -->|"Read cached data"| KV
-        Cron -->|"Run ingestion"| KV
+        API -->|"Read cached data"| D1
+        Cron -->|"Run ingestion"| D1
     end
 
     External["CelesTrak GP Data"]
@@ -247,7 +249,7 @@ flowchart TB
     Application["Application Layer\nMission and Satellite Services"]
     Domain["Domain Layer\nModels / Orbital Calculations / Rules"]
     Ports["Infrastructure Contracts\nRepositories / Data Providers"]
-    Adapters["Infrastructure Adapters\nCloudflare KV / CelesTrak / Workers"]
+    Adapters["Infrastructure Adapters\nCloudflare D1 / CelesTrak / Workers"]
 
     Presentation --> Application
     Application --> Domain
@@ -302,7 +304,7 @@ The domain layer must not import Cloudflare, Astro runtime, or CesiumJS infrastr
 Implements external interactions:
 
 - CelesTrak HTTP client.
-- Cloudflare KV repository.
+- Cloudflare D1 repository.
 - Worker request handling.
 - Scheduled ingestion.
 - Environment configuration.
@@ -448,7 +450,7 @@ Invalid structured content should fail the build rather than silently appear on 
 
 If automated content updates or complex queries become necessary, the catalog can move to a database behind repository interfaces.
 
-A database is not required for First Orbit.
+First Orbit keeps mission content in source-controlled files. D1 is used for orbital data.
 
 ---
 
@@ -480,7 +482,7 @@ sequenceDiagram
     participant Worker as Ingestion Worker
     participant CelesTrak
     participant Validator as OMM Validator
-    participant KV as Cloudflare KV
+    participant D1 as Cloudflare D1
 
     Cron->>Worker: Scheduled event
     Worker->>CelesTrak: Request OMM JSON
@@ -489,18 +491,18 @@ sequenceDiagram
 
     alt Valid data
         Validator-->>Worker: Validated dataset
-        Worker->>KV: Save latest dataset
-        Worker->>KV: Update success metadata
+        Worker->>D1: Insert or update only if epoch is newer
+        Worker->>D1: Update success metadata
     else Invalid or unavailable data
         Validator-->>Worker: Validation error
         Worker->>Worker: Log error
-        Note over Worker,KV: Preserve last known valid dataset
+        Note over Worker,D1: Preserve last known valid dataset
     end
 ```
 
 ### 9.3 Initial refresh policy
 
-The initial configuration will retrieve orbital elements approximately every six hours.
+Configure the schedule in the Worker deployment. Start with one refresh per day and validate that cadence against the selected spacecraft’s prediction freshness and the effect of a missed run. Adjust the schedule in deployment configuration if needed.
 
 The frequency must respect CelesTrak's documented update cadence and usage policies.
 
@@ -516,21 +518,11 @@ The system should:
 
 ### 9.4 Persistence
 
-Cloudflare KV will store the latest validated orbital elements.
+Cloudflare D1 is the authoritative store for the latest validated orbital dataset per spacecraft. The spacecraft catalog identifier is the primary key. The dataset, normalized orbital epoch, retrieval timestamp, provenance and schema version are stored together.
 
-Example keys:
+The repository inserts a missing record or replaces an existing one only if the candidate epoch is strictly newer. D1 evaluates the condition and updates the record in a single statement. Older and equal epochs leave the published record unchanged, including its retrieval timestamp. Ingestion health is tracked separately from the dataset.
 
-```text
-orbital:latest:{noradCatalogId}
-orbital:metadata:{noradCatalogId}
-ingestion:last-success
-```
-
-KV is sufficient for the initial access pattern because the platform needs straightforward key-based reads and periodic replacements.
-
-KV is eventually consistent, so newly written orbital records may not become visible across all regions immediately. The application must not assume transactional or globally immediate consistency.
-
-Before release, verify that delayed or overlapping ingestion runs cannot overwrite a newer orbital dataset with an older one. Comparing epochs through an eventually consistent KV read alone is insufficient to establish this guarantee; the ingestion coordination approach must be validated.
+Before release, verify that an older valid update finishing after a newer one cannot replace the newer dataset. The Worker API reads directly from D1.
 
 ### 9.5 Repository interface
 
@@ -540,15 +532,15 @@ interface OrbitalDatasetRepository {
     noradCatalogId: number
   ): Promise<OrbitalDataset | null>;
 
-  save(
+  publishIfNewer(
     dataset: OrbitalDataset
-  ): Promise<void>;
+  ): Promise<"published" | "skipped">;
 }
 ```
 
 The Cloudflare implementation satisfies this contract.
 
-Future implementations could use D1, PostgreSQL, object storage, or another suitable persistence mechanism.
+Future implementations could use PostgreSQL or another storage system that supports the same conditional publication contract.
 
 ### 9.6 Data freshness
 
@@ -560,9 +552,9 @@ The platform must distinguish:
 - Stale data.
 - Unavailable data.
 
-Cached data should not automatically be considered accurate indefinitely.
+Configure a warning threshold and a later cutoff for the selected spacecraft. Measure the time between the orbital epoch and the time being predicted. At the warning threshold, label the prediction stale and keep it visible. At the cutoff, hide the predicted position, paths, and calculated coordinates. Keep the mission information, orbital epoch, retrieval timestamp, and source visible with an explanation.
 
-If orbital elements exceed an acceptable age threshold, the interface must display a warning or suspend tracking when appropriate.
+Evaluate the thresholds while the page is open and whenever simulation time changes. Validate both thresholds against the selected spacecraft before release, including a normal daily refresh cycle and a missed run.
 
 ---
 
@@ -640,7 +632,7 @@ interface SatellitePosition {
 
 Position calculations should be deterministic for a fixed dataset and timestamp.
 
-### 10.6 Orbit and ground track
+### 10.6 Predicted orbital path
 
 The predicted trajectory is generated by propagating spacecraft positions at discrete timestamps.
 
@@ -649,14 +641,13 @@ The implementation should:
 - Sample over a configurable interval.
 - Use an appropriate orbital-period estimate.
 - Avoid unnecessary repeated calculations.
-- Handle longitude wrapping at the antimeridian.
 - Generate paths only when needed.
 
-The orbit path should not be regenerated every animation frame.
+The orbit path should not be regenerated every animation frame. First Orbit defers the ground track, which traces the orbit onto Earth’s surface.
 
 ### 10.7 Scientific validation
 
-Orbital calculations must be tested against independent trusted reference data or published verification cases.
+Verify the numerical implementation against published SGP4 cases and independent coordinate-conversion references. Compare predictions for the selected spacecraft against Copernicus orbit products at matching instants in a common reference frame. Use the measured position error by prediction age to justify the freshness thresholds and refresh cadence. See the technical design’s scientific validation plan.
 
 Tests should define:
 
@@ -731,13 +722,9 @@ For First Orbit:
 
 ### 11.5 Globe imagery
 
-The globe must use a legally reusable imagery source or suitable static Earth texture.
+First Orbit will use a low-resolution Earth texture served from the site's static assets on a WGS84 ellipsoid. The viewer uses no provider-issued token for imagery or terrain.
 
-The MVP must not depend on paid Cesium ion imagery or terrain services.
-
-The imagery source, account/token requirements, and acceptability of an untextured fallback remain undecided. Before implementing this feature, compare local Earth textures and hosted services for licensing, cost and quotas, privacy, reliability, visual detail, and browser/mobile performance; record the outcome in ADR-014.
-
-Attribution and usage restrictions must be respected.
+Before integrating the asset, verify redistribution rights, required attribution, and mobile loading performance. Record the source and the verification results in [ADR-014](docs/decisions/014-token-free-3d-globe.md).
 
 ### 11.6 Accessibility fallback
 
@@ -757,7 +744,7 @@ The essential tracking data should remain understandable without the 3D renderin
 
 ## 12. API Architecture
 
-The first API serves cached orbital data from Cloudflare KV. For First Orbit, orbital data is exposed only through this API; no additional static JSON artifact is published.
+The first API serves cached orbital data from Cloudflare D1. For First Orbit, orbital data is exposed only through this API; no additional static JSON artifact is published.
 
 ### Endpoint
 
@@ -789,10 +776,10 @@ interface OrbitalApiResponse {
 
 | Condition | HTTP status |
 |---|---|
-| Cached data available | 200 |
+| Valid stored dataset available, including expired elements | 200 |
 | Invalid identifier | 400 |
 | Unknown spacecraft | 404 |
-| Known spacecraft, no usable orbital data | 503 |
+| Known spacecraft, no valid dataset available | 503 |
 | Unexpected server failure | 500 |
 
 Errors should use a consistent response contract.
@@ -829,15 +816,15 @@ flowchart LR
     Assets["Static Assets"]
     API["API Routes"]
     Cron["Scheduled Jobs"]
-    KV[("Cloudflare KV")]
+    D1[("Cloudflare D1")]
 
     GitHub --> CI
     CI -->|"Build / Deploy"| Cloudflare
     Cloudflare --> Assets
     Cloudflare --> API
     Cloudflare --> Cron
-    API --> KV
-    Cron --> KV
+    API --> D1
+    Cron --> D1
 ```
 
 ### 13.2 Deployment configuration
@@ -846,7 +833,7 @@ Wrangler is responsible for:
 
 - Worker entrypoint.
 - Static assets.
-- KV bindings.
+- D1 bindings.
 - Cron configuration.
 - Runtime compatibility.
 - Deployment settings.
@@ -891,7 +878,7 @@ Free-tier limits are not treated as unlimited resources.
 The implementation should minimize:
 
 - Worker invocations.
-- KV writes.
+- D1 writes.
 - External API requests.
 - Large asset transfers.
 - Backend CPU work.
@@ -925,7 +912,7 @@ The following should remain reusable:
 The following may require replacement:
 
 - Worker request handlers.
-- KV storage adapters.
+- D1 storage adapters.
 - Cron configuration.
 - Deployment scripts.
 - Environment bindings.
@@ -936,7 +923,7 @@ Potential migration sequence:
 
 1. Deploy the Astro application to Vercel.
 2. Replace Cloudflare-specific runtime handlers.
-3. Migrate KV datasets to suitable persistence.
+3. Migrate D1 datasets to suitable persistence.
 4. Replace scheduled ingestion.
 5. Verify API response compatibility.
 6. Run scientific and application regression tests.
@@ -961,10 +948,10 @@ The application must explicitly handle external data and rendering failures.
 |---|---|
 | CelesTrak unavailable | Preserve valid cache and record failure |
 | Malformed orbital elements | Reject new data |
-| Stale orbital data | Display warning or disable unreliable tracking |
+| Stale orbital data | Warn at the warning threshold. Hide the prediction at the cutoff. |
 | Missing spacecraft record | Show unavailable state |
 | SGP4 propagation failure | Stop displaying invalid position |
-| KV unavailable | Return controlled API error |
+| D1 unavailable | Return controlled API error |
 | CesiumJS initialization failure | Display accessible fallback |
 | WebGL unavailable | Display spacecraft details without globe |
 
@@ -1009,7 +996,6 @@ Focus on:
 - Orbital propagation.
 - Coordinate conversion.
 - Unit conversion.
-- Ground-track generation.
 - Freshness calculations.
 - Failure handling.
 
@@ -1019,7 +1005,7 @@ Validate:
 
 - CelesTrak connector.
 - Ingestion pipeline.
-- KV repository adapter.
+- D1 repository adapter.
 - Worker API.
 - Cache behavior.
 - Failure recovery.
@@ -1069,7 +1055,7 @@ A visually plausible orbit is not sufficient proof of correctness.
 - Stop or reduce computation when not visible.
 - Use conservative rendering settings on mobile devices.
 
-Performance must be measured on real devices and representative network conditions.
+Performance must be measured on a representative physical phone under the documented network profile. The technical design defines launch checks for tracker readiness, HTML fallback, and free-tier usage.
 
 ---
 
@@ -1154,27 +1140,7 @@ Use of Codex does not imply affiliation with or endorsement by OpenAI.
 
 ## 22. Architecture Decision Records
 
-Architecture decisions are tracked in the project documentation. **Accepted** records maintainer approval of a choice; implementation and technical validation may still be pending. **Proposed** records choices awaiting approval. Required technical checks must pass before the affected feature is released, rather than serving as prerequisites for recording approval.
-
-| ADR | Decision | Status |
-|---|---|---|
-| ADR-001 | Server-side data aggregation | Accepted |
-| ADR-002 | Client-side orbital computation | Accepted |
-| ADR-003 | Provenance-first data model | Accepted |
-| ADR-004 | Modular feature boundaries | Accepted |
-| ADR-005 | Avoid premature infrastructure complexity | Accepted |
-| ADR-006 | Cloudflare Free-first architecture | Accepted |
-| ADR-007 | Cloud portability | Accepted |
-| ADR-008 | Static content before database | Accepted |
-| ADR-009 | Cloudflare KV for initial orbital persistence | Accepted |
-| ADR-010 | OMM JSON as orbital data format | Accepted |
-| ADR-011 | Client-side SGP4 propagation | Accepted |
-| ADR-012 | Astro static generation | Accepted |
-| ADR-013 | Single repository, modular monolith | Accepted |
-| ADR-014 | Token-free 3D globe | Proposed |
-| ADR-015 | AI-assisted development and transparency | Accepted |
-
-Detailed rationale and consequences may be maintained in `docs/decisions/` as separate records.
+See the [ADR index](docs/decisions/README.md) for the authoritative decision records and statuses. Acceptance records maintainer approval. The release checks in the technical design verify the implementation.
 
 ---
 
@@ -1190,7 +1156,7 @@ Initial implementation:
 - One verified mission.
 - One trackable spacecraft.
 - CelesTrak ingestion.
-- Cloudflare KV cache.
+- Cloudflare D1 orbital storage.
 - Browser-side SGP4.
 - CesiumJS visualization.
 - Cloudflare deployment.
@@ -1224,13 +1190,13 @@ Later milestones may require new data models and persistence capabilities, but t
 
 ## 24. Known Trade-offs
 
-### Cloudflare KV
+### Cloudflare D1
 
-**Benefit:** Simple, inexpensive key-based storage.
+**Benefit:** The epoch check and publication are one database operation.
 
-**Trade-off:** Eventual consistency, usage quotas, and provider-specific APIs.
+**Trade-off:** The database requires a schema migration and is subject to plan quotas and service availability.
 
-**Mitigation:** Small atomic records, source epochs, and repository interfaces.
+**Mitigation:** Keep the schema small, read by primary key, and confine D1 bindings to the repository adapter.
 
 ### Client-side orbital propagation
 
@@ -1270,11 +1236,11 @@ Later milestones may require new data models and persistence capabilities, but t
 
 The following decisions remain open until implementation provides enough evidence:
 
-1. Which exact Sentinel spacecraft will be selected for First Orbit?
-2. What orbital-data age should trigger a warning or disable tracking?
-3. Which legally reusable Earth imagery source should be used for the 3D globe?
+1. Which of Sentinel-2A, Sentinel-2B, and Sentinel-2C passes the spacecraft comparison in the technical design?
+2. What validated warning and cutoff ages should First Orbit use for the selected spacecraft?
+3. Which locally hosted Earth texture meets the redistribution, attribution, and mobile performance checks?
 4. What browser performance thresholds should determine simplified rendering?
-5. At what point should Cloudflare D1 replace or supplement static content and KV?
+5. At what point should editorial content move beyond source-controlled files?
 6. What level of observability can be achieved entirely within free-tier limits?
 7. How should future European mission classification be standardized?
 
@@ -1301,7 +1267,7 @@ Open questions should be resolved through small technical experiments and docume
 
 - [Cloudflare Workers](https://developers.cloudflare.com/workers/)
 - [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
-- [Workers KV](https://developers.cloudflare.com/kv/)
+- [Cloudflare D1](https://developers.cloudflare.com/d1/)
 - [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
 - [Wrangler](https://developers.cloudflare.com/workers/wrangler/)
 
@@ -1325,7 +1291,7 @@ The initial implementation combines:
 - CesiumJS for 3D visualization.
 - satellite.js for orbital calculations.
 - Cloudflare Workers for lightweight APIs.
-- Cloudflare KV for cached orbital elements.
+- Cloudflare D1 for cached orbital elements.
 - Cron Triggers for scheduled ingestion.
 - GitHub Actions for automated validation and deployment.
 

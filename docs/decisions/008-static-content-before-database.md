@@ -9,7 +9,7 @@
 The first milestone needs a small curated mission catalog and one spacecraft association. This content changes relatively infrequently and can be reviewed through Git. A relational database would add unnecessary setup, migrations, and operations.
 
 ## Decision
-Store curated editorial content (missions, organizations, source references, and eventually observatories) as version-controlled Markdown/MDX/JSON, using Astro content validation. Introduce a database only when structured queries, automated updates, ingestion history, or scale require one. Frequently changing orbital datasets are a separate concern and can use a cache/storage adapter; this ADR does not prohibit KV.
+Store curated editorial content (missions, organizations, source references, and eventually observatories) as version-controlled Markdown/MDX/JSON, using Astro content validation. Introduce a database only when structured queries, automated updates, ingestion history, or scale require one. Frequently changing orbital datasets are a separate concern and use the orbital storage adapter specified in [ADR-016](016-d1-for-first-orbit-orbital-persistence.md).
 
 ## Rationale
 - Static pages are fast and portable.

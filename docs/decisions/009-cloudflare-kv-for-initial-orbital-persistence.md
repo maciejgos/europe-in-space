@@ -1,6 +1,6 @@
 # ADR-009: Cloudflare KV for Initial Orbital Persistence
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-016](016-d1-for-first-orbit-orbital-persistence.md)
 - **Date:** 2026-11-15
 - **Decision owners:** Project maintainer
 - **Scope:** Europe in Space / First Orbit

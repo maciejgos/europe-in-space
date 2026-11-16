@@ -3,14 +3,16 @@
 
 **Version:** 1.0  
 **Date:** November 15, 2026  
-**Status:** Proposed — implementation-ready design  
-**Related document:** Europe in Space PRD v1.1  
+**Status:** First Orbit implementation plan with validation checkpoints\
+**Related documents:** [Product requirements](Product%20Requirements%20Document.md) · [System architecture](../ARCHITECTURE.md) · [Architecture decisions](decisions/README.md)\
 **Milestone:** First Orbit  
 **Domain:** europeinspace.org  
 **Target hosting:** Cloudflare Free  
 **Future portability:** Vercel
 
 ---
+
+This document defines the First Orbit implementation sequence and verification checks. The [PRD milestone](Product%20Requirements%20Document.md#18-first-engineering-milestone--first-orbit) governs scope and product acceptance. The [architecture](../ARCHITECTURE.md) describes system boundaries. See the individual ADRs for current technical decisions.
 
 # 1. Executive Summary
 
@@ -37,7 +39,6 @@ The application opens an interactive globe displaying:
 - Earth.
 - A spacecraft's predicted position.
 - Its orbital trajectory.
-- Its predicted ground track.
 - Basic spacecraft metadata.
 - The current prediction timestamp.
 - The epoch and freshness of the orbital data.
@@ -63,7 +64,7 @@ First Orbit includes:
 - Cloudflare deployment.
 - Basic technical documentation.
 
-Additional missions, observatories, image galleries, launch calendars and Earth observation tools remain outside this milestone.
+Ground tracks, additional missions, observatories, image galleries, launch calendars and Earth observation tools remain outside this milestone.
 
 ---
 
@@ -131,7 +132,7 @@ Mission information and essential spacecraft data must remain accessible without
        Astro + React               Cloudflare Worker
              |                           |
              |                           v
-             |                     Cloudflare KV
+             |                     Cloudflare D1
              |                           ^
              |                           |
              |                    Scheduled Ingestion
@@ -181,35 +182,13 @@ Provide a minimal HTTP API:
 
 The same Worker can execute scheduled ingestion.
 
-### Cloudflare KV
+### Cloudflare D1
 
-Store the latest validated orbital records and ingestion metadata.
-
-KV is selected because:
-
-- The dataset is small.
-- Reads are simple.
-- Relational queries are unnecessary.
-- Persistence survives application deployments.
-- The free tier is sufficient for initial usage.
+Store one latest validated orbital dataset per spacecraft. D1 checks the orbital epoch and publishes the candidate in a single conditional write. Mission content remains in source-controlled files.
 
 ### Cron Triggers
 
-Periodically retrieve orbital data from CelesTrak.
-
-Initial refresh schedule: every six hours.
-
-This is a conservative starting policy rather than a requirement for precise six-hour freshness. It can be adjusted after confirming source policies, observed data updates and platform quotas.
-
-## 3.3 Why Not D1 Yet?
-
-First Orbit does not require relational persistence.
-
-Mission content is stored in source-controlled files.
-
-The orbital data service needs only a small number of cached records.
-
-D1 may become appropriate when the platform has a larger normalized catalog, automated mission ingestion or complex relationships.
+Retrieve orbital elements from CelesTrak on a deployment-configured schedule. Use a daily UTC trigger as the starting configuration. Validate it against the selected spacecraft’s prediction freshness and the impact of a missed run, then adjust the deployment schedule if needed.
 
 ---
 
@@ -226,7 +205,7 @@ D1 may become appropriate when the platform has a larger normalized catalog, aut
 | Orbital propagation | satellite.js |
 | Static hosting | Cloudflare Workers Static Assets |
 | API runtime | Cloudflare Workers |
-| Orbital data cache | Cloudflare KV |
+| Orbital data cache | Cloudflare D1 |
 | Scheduling | Cloudflare Cron Triggers |
 | Unit testing | Vitest |
 | Browser testing | Playwright |
@@ -333,7 +312,7 @@ May depend on application services and domain models.
 
 **Application core**
 
-Must not import Cloudflare Workers, KV bindings, Astro runtime APIs or CesiumJS rendering objects.
+Must not import Cloudflare Workers, D1 bindings, Astro runtime APIs or CesiumJS rendering objects.
 
 **Data source integrations**
 
@@ -526,6 +505,25 @@ The catalog number must be obtained from verified spacecraft metadata.
 
 Do not guess catalog identifiers from spacecraft names.
 
+### First Orbit spacecraft comparison
+
+ESA identifies Sentinel-2A, Sentinel-2B, and Sentinel-2C as spacecraft in the mission. CelesTrak lists all three in its Earth Resources table. The table reports element age at a point in time. Candidate selection uses the age and prediction error across a full refresh cycle and a missed run. [ESA Sentinel-2 mission](https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-2/) · [CelesTrak Earth Resources catalog](https://celestrak.org/Norad/elements/table.php?FORMAT=json&GROUP=resource)
+
+| Candidate | NORAD catalog ID | International designator | Validation priority |
+|---|---:|---|---|
+| Sentinel-2C | 60989 | 2024-157A | Evaluate first. Most recently launched of the three. |
+| Sentinel-2B | 42063 | 2017-013A | Evaluate alongside 2C. |
+| Sentinel-2A | 40697 | 2015-028A | Include as an additional candidate. |
+
+Before selecting a spacecraft and building its public tracker:
+
+1. Retrieve a targeted CelesTrak OMM JSON sample for each candidate. Check the returned catalog ID, international designator, epoch, and successful SGP4 initialization.
+2. Document the applicable retrieval, caching, attribution, and onward redistribution terms for the exact feed and intended public API. Confirm fixture publication rights before committing real orbital elements to the repository. [CelesTrak usage policy](https://celestrak.org/usage-policy.php) · [Space-Track documentation](https://www.space-track.org/documentation)
+3. Compare candidates across several daily cycles and simulate one missed refresh. Record element age at retrieval and forecast error over the following 24 and 48 hours. Compare to operator orbit products where available at matching times and in a common reference frame. Define the acceptable display error before selecting the spacecraft or setting the age thresholds. [Copernicus Sentinel-2 orbit products](https://sentiwiki.copernicus.eu/web/s2-mission)
+4. Select one candidate that passes. If several pass, prefer Sentinel-2C. Use the verified spacecraft record as the source for the mission link and the API allowlist. If none pass, revisit the cadence or data source before widening the mission scope.
+
+Identity is verified at catalog level for all three. Per-spacecraft OMM response validation, onward publication rights, and measured prediction accuracy remain open. CelesTrak’s public fetch policy establishes retrieval guidance. Confirm separately how Space-Track’s basic-data redistribution approval applies to the CelesTrak feed and repository fixtures.
+
 ## 8.2 Format Decision
 
 Use **CCSDS OMM JSON** rather than TLE as the preferred internal source format.
@@ -563,10 +561,8 @@ A different orbital-data provider could be added later without changing the trac
 6. Verify the returned catalog identifier.
 7. Parse and validate the orbital epoch.
 8. Validate that the orbital elements can be initialized for SGP4.
-9. Compare the new record with the cached record.
-10. Persist the new validated dataset.
-11. Update ingestion metadata.
-12. Log success or failure.
+9. Submit the validated candidate for conditional publication in D1.
+10. Record publication, skip, or failure in ingestion health metadata.
 
 ## 8.5 Failure Handling
 
@@ -575,7 +571,7 @@ If CelesTrak is unavailable:
 - Do not delete the previous record.
 - Preserve the most recent valid dataset.
 - Record the failure.
-- Continue serving cached data with a warning.
+- Continue serving the last valid dataset through the API. The tracker applies the age policy below. Record the upstream failure for operational monitoring.
 - Avoid aggressive retries.
 
 If a response is empty, malformed or inconsistent:
@@ -592,91 +588,38 @@ If a spacecraft has no current public orbital elements:
 
 ## 8.6 Freshness Policy
 
-Initial proposal:
+The tracker loads orbital elements on page load and evaluates freshness locally. The scheduled Worker refresh stays configurable, initially daily in UTC. Compute prediction age as the absolute time difference between the orbital epoch and the prediction timestamp. Display the epoch and retrieval time separately.
 
-- Scheduled polling: every 6 hours.
-- Client refetch on page load.
-- No continuous polling from the browser.
-- Display both retrieval time and orbital epoch.
-- Warn when data becomes older than the configured freshness threshold.
+| Prediction age | Tracker behavior |
+|---|---|
+| Below the warning threshold | Show the prediction. |
+| At or above the warning threshold, below the cutoff | Keep the prediction visible and label it stale. |
+| At or above the cutoff | Hide the marker, orbital path and calculated coordinates. Keep the mission and spacecraft details, orbital epoch, retrieval timestamp, and source visible with an explanation. |
 
-Freshness thresholds are product configuration values and must be validated against the actual source cadence and spacecraft category.
-
-Do not assume that an old element set remains sufficiently accurate merely because it exists in cache.
+Set a per-spacecraft warning threshold and a strictly later cutoff in tracker configuration. Evaluate them on initial load, while the page remains open, and whenever the prediction time changes, including after resuming a backgrounded page. Choose both values before release using evidence for the selected spacecraft, including normal daily ingestion and a missed refresh. Visitor warnings are based on prediction age. An upstream failure is recorded independently of the tracker’s warning state.
 
 ---
 
-# 9. Cloudflare KV Design
+# 9. Cloudflare D1 Design
 
-## 9.1 Purpose
+## 9.1 Storage
 
-KV will store small, frequently read datasets produced by the ingestion process.
+Create an `orbital_datasets` table keyed by the verified NORAD catalog identifier. Store the normalized epoch, complete validated dataset, retrieval timestamp, source and schema version together. Track ingestion health separately.
 
-It is not a general relational database.
-
-## 9.2 Key Design
-
-```text
-orbital:latest:{noradCatalogId}
-orbital:metadata:{noradCatalogId}
-ingestion:last-success
-```
-
-Example:
-
-```text
-orbital:latest:12345
-```
-
-The numeric value above is illustrative, not an assigned Sentinel catalog ID.
-
-## 9.3 Storage Interface
+## 9.2 Repository contract
 
 ```typescript
 export interface OrbitalDatasetRepository {
-  findLatest(
-    noradCatalogId: number
-  ): Promise<OrbitalDataset | null>;
-
-  save(
-    dataset: OrbitalDataset
-  ): Promise<void>;
+  findLatest(noradCatalogId: number): Promise<OrbitalDataset | null>;
+  publishIfNewer(dataset: OrbitalDataset): Promise<"published" | "skipped">;
 }
 ```
 
-## 9.4 Cloudflare Adapter
+The infrastructure adapter binds D1 to this contract. The Worker API reads directly from D1. Domain logic and the tracker use provider-neutral types.
 
-```typescript
-export class CloudflareKvOrbitalRepository
-  implements OrbitalDatasetRepository {
+## 9.3 Conditional publication
 
-  constructor(
-    private readonly kv: KVNamespace
-  ) {}
-
-  // Implementation follows repository contract.
-}
-```
-
-This class belongs in the infrastructure layer.
-
-The domain and satellite-tracking components must not reference KV directly.
-
-## 9.5 Consistency Considerations
-
-Workers KV is eventually consistent.
-
-For First Orbit this is acceptable because orbital elements are periodically refreshed rather than modified interactively.
-
-Requirements:
-
-- Store each validated dataset as an atomic value.
-- Include a source epoch and fetch timestamp.
-- Avoid assumptions of immediate global consistency.
-- Do not use KV for transactional updates.
-- Avoid unnecessary writes.
-
-If stronger consistency or relational querying becomes necessary, evaluate D1.
+Use one SQL insert with an on-conflict update conditioned on the candidate orbital epoch being strictly greater than the stored epoch. Normalize the epoch into a consistently ordered representation before writing. A first record is inserted. Older and equal epochs leave the dataset and its retrieval timestamp unchanged. Report those candidates as skipped, and distinguish storage errors from skips. A late completion or retry must never replace a newer record.
 
 ---
 
@@ -712,9 +655,9 @@ Values are illustrative. The implementation must return a validated OMM payload 
 
 | Situation | Response |
 |---|---|
-| Valid cached record | 200 |
+| Valid stored dataset, including expired elements | 200 |
 | Unknown spacecraft | 404 |
-| Known spacecraft without data | 503 or explicit unavailable state |
+| Known spacecraft without a valid stored dataset | 503 |
 | Invalid request | 400 |
 | Unexpected server error | 500 |
 
@@ -743,7 +686,7 @@ Use a consistent error structure.
 
 Use cache headers appropriate for periodically refreshed orbital datasets.
 
-The source response must include enough metadata for the browser to determine data age independently of HTTP cache duration.
+The response includes the orbital epoch and retrieval time so the tracker can apply the age policy independently of HTTP cache duration. Expiry is evaluated against the prediction time in the tracker.
 
 The frontend must handle temporary API failure gracefully.
 
@@ -755,43 +698,19 @@ The frontend must handle temporary API failure gracefully.
 
 Use satellite.js with the SGP4 propagator.
 
-The pipeline is:
+The pipeline uses the same frame and unit conventions for the live marker and every path sample:
 
 ```text
-OMM JSON
-   |
-   v
-Parse orbital elements
-   |
-   v
-Initialize SGP4 satellite record
-   |
-   v
-Propagate to simulation time
-   |
-   v
-ECI position
-   |
-   +--> Earth-fixed / geodetic conversion
-   |
-   v
-Cesium Cartesian position
-   |
-   v
-3D rendering
+Validated OMM → SGP4 at the prediction timestamp → TEME position (km)
+    → Earth-fixed Cartesian position at the same timestamp (km)
+        → Cesium globe marker and orbit path (m)
+        → WGS84 longitude, latitude and ellipsoid height
+            → tracking details
 ```
 
 ## 11.2 Coordinate Systems
 
-The implementation must explicitly handle:
-
-- Earth-centered inertial coordinates.
-- Earth-fixed coordinates.
-- Geodetic latitude and longitude.
-- Altitude.
-- Cesium's Earth-centered Cartesian representation.
-
-Conversion must consider Greenwich sidereal time for the relevant timestamp.
+Treat SGP4 output as TEME. Apply the Earth rotation transform at each sample's own prediction timestamp before passing positions to Cesium. Derive WGS84 geodetic values from the Earth-fixed position. Record the time scale, sidereal-time method, Earth-orientation inputs or approximations, and frame convention in the implementation and validation fixtures. Use a common Earth-fixed frame and time scale when comparing with operator orbit products.
 
 ## 11.3 Units
 
@@ -840,14 +759,6 @@ Initial proposal:
 - Recalculate when necessary.
 - Avoid creating a new path every animation frame.
 
-## 11.7 Ground Track
-
-Calculate geodetic latitude and longitude for each sampled position.
-
-Handle longitude wrapping at the antimeridian.
-
-The ground track must not display an artificial line across the map when the satellite crosses ±180° longitude.
-
 ---
 
 # 12. 3D Visualization Design
@@ -860,8 +771,7 @@ SatelliteTracker
 ├── GlobeViewer
 │   ├── EarthGlobe
 │   ├── SatelliteMarker
-│   ├── OrbitPath
-│   └── GroundTrack
+│   └── OrbitPath
 ├── SatelliteDetails
 ├── SimulationClock
 └── DataFreshnessIndicator
@@ -879,17 +789,7 @@ A token-free globe is possible with CesiumJS, but the default ion terrain, image
 
 ## 12.3 Globe Imagery
 
-Preferred approach:
-
-- Start with the WGS84 ellipsoid.
-- Use a low-resolution, legally reusable Earth texture or imagery provider.
-- Verify the redistribution or tile-service usage terms.
-- Avoid relying on an unrestricted public map tile service.
-- Keep imagery attribution visible.
-
-Do not introduce an external paid mapping dependency merely to deliver First Orbit.
-
-A simple globe is sufficient to prove the functionality.
+Use a low-resolution Earth texture served from the site's static assets on the WGS84 ellipsoid. Configure Cesium explicitly for local imagery and ellipsoid terrain. Verify the selected asset's redistribution terms for both the repository and the site, display the required attribution, and check mobile download size and rendering performance. See [ADR-014](decisions/014-token-free-3d-globe.md).
 
 ## 12.4 Satellite Marker
 
@@ -997,7 +897,6 @@ interface TrackerState {
   isPlaying: boolean;
 
   showOrbit: boolean;
-  showGroundTrack: boolean;
 
   loading: boolean;
   error?: string;
@@ -1017,7 +916,7 @@ The implementation should separate transient UI state from orbital source data.
 7. Initialize the 3D viewer.
 8. Start the animation loop.
 
-If data validation fails, display the fallback state.
+Apply the freshness policy before showing a prediction and as prediction time changes. For missing or invalid data or failed propagation, show the unavailable state with mission details and any valid source metadata. Use the HTML coordinate view when only 3D rendering fails and the prediction can still be shown under the freshness policy.
 
 ---
 
@@ -1050,18 +949,19 @@ Illustrative configuration:
     "not_found_handling": "404-page"
   },
   "triggers": {
-    "crons": ["0 */6 * * *"]
+    "crons": ["0 0 * * *"]
   },
-  "kv_namespaces": [
+  "d1_databases": [
     {
-      "binding": "ORBITAL_CACHE",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+      "binding": "ORBITAL_DB",
+      "database_name": "europe-in-space-orbital",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
     }
   ]
 }
 ```
 
-The KV namespace must be created before deployment and the actual identifier inserted into environment configuration.
+Create the D1 database, configure its identifier, and apply the schema migration before deploying the orbital API and scheduled handler. Configure the refresh schedule with Wrangler’s `triggers.crons` for the target environment.
 
 Static asset routing and the availability of the configured 404 page must be tested during deployment.
 
@@ -1133,7 +1033,7 @@ The following must be platform-independent:
 The following may be platform-specific:
 
 - Runtime handlers.
-- KV storage adapter.
+- D1 storage adapter.
 - Scheduled-job registration.
 - Deployment configuration.
 - Environment bindings.
@@ -1144,7 +1044,7 @@ The migration path should be:
 
 1. Deploy the Astro static application to Vercel.
 2. Replace or relocate the orbital-data API.
-3. Replace Cloudflare KV with a suitable data store.
+3. Replace Cloudflare D1 with a suitable data store.
 4. Replace Cron Triggers with an appropriate scheduler.
 5. Retain existing domain, application and visualization logic.
 6. Validate parity.
@@ -1154,9 +1054,9 @@ The application must not require running both hosting providers at the same time
 
 ## 15.3 Storage Portability
 
-Because KV usage is isolated behind an interface, a future implementation could use:
+Because D1 usage is isolated behind an interface, a future implementation could use:
 
-- A relational database.
+- Another relational database.
 - Another key-value store.
 - An object store.
 - A versioned JSON artifact.
@@ -1241,7 +1141,6 @@ Avoid logging personal data.
 - Unit conversions.
 - Coordinate transformations.
 - Failure handling.
-- Ground-track longitude wrapping.
 
 ### Data Validation
 
@@ -1263,19 +1162,12 @@ External API calls should be mocked during normal CI testing.
 
 ## 17.3 Scientific Validation
 
-Orbital calculations should be compared with an independent trusted reference or published verification dataset.
+Run two complementary checks before release:
 
-Validation must specify:
+1. **Numerical correctness.** Use the published Vallado et al. SGP4 cases to check TEME positions at epoch and nonzero time offsets. If the reference input is TLE, map its fields to equivalent OMM values for a separate check of the production initializer. Use independent expected values to test the Earth-fixed and WGS84 conversions, including the positions passed to Cesium in meters. Cover more than one timestamp so a fixed rotation or use of the epoch for every path sample fails. Document the fixture, timestamps, frames, constants, reference version, and numerical tolerances before implementation. Use the same documented Earth-orientation assumptions in the application and the numerical reference test. [SGP4 verification cases](https://celestrak.org/publications/AIAA/2006-6753/) · [Reference coordinate conversions](https://celestrak.org/publications/AIAA/2006-6753/faq.php)
+2. **Prediction accuracy.** Compare the selected spacecraft's predictions against Copernicus orbit products at matching instants in a common reference frame. Measure three-dimensional position error by prediction age across normal daily refreshes and a simulated missed refresh. Set an acceptable position-error limit for the educational visualization before evaluating the results. Use the evidence to justify the warning threshold, cutoff, and refresh cadence in §8.6. Keep the measurement record with its source, timestamps, frame, conversion assumptions, and tested age bands. [Copernicus Sentinel-2 orbit products](https://sentiwiki.copernicus.eu/web/s2-mission)
 
-- Input orbital elements.
-- Epoch.
-- Prediction timestamp.
-- Coordinate reference frame.
-- Expected position.
-- Numeric tolerance.
-- Software version.
-
-The test must not compare two calculations that both depend on the same unverified conversion implementation.
+A passing numerical test verifies the implementation against its reference. The operator comparison supplies the evidence for how long to display real predictions.
 
 ## 17.4 End-to-End Tests
 
@@ -1299,7 +1191,7 @@ Visitor can inspect orbital data timestamps and attribution.
 
 **E2E-005 — Source Unavailable**
 
-The tracker shows a useful unavailable or stale-data state.
+With no valid dataset, the tracker shows the unavailable state. With cached data after an upstream failure, advance prediction time through the warning and cutoff boundaries without reloading. Verify that the warning appears at the first boundary and that the marker, paths, and calculated coordinates disappear at the cutoff while source details remain visible.
 
 **E2E-006 — Mobile**
 
@@ -1353,11 +1245,17 @@ End-to-end tests should run before production release and preferably in CI when 
 | Satellite positions | Approximately 1 update per second |
 | Visible spacecraft | One initially |
 | API request frequency | Once per page load under normal conditions |
-| Background orbital refresh | Every 6 hours initially |
-| Database dependency | None |
+| Background orbital refresh | Configurable deployment schedule, initially daily in UTC |
+| Orbital storage | D1 |
 | Paid infrastructure | None |
 
-Performance targets must be verified on actual devices rather than assumed from the architecture.
+### First Orbit release check
+
+**Mobile.** Record the phone model, OS, browser, and test build. Use a physical mid-range Android phone at 10 Mbps download and 100 ms round-trip latency. Run ten cold-cache loads of the production build against a fresh dataset. At least nine loads must show the globe, marker, and operable controls within five seconds of opening the tracker. Disable WebGL and verify the HTML prediction view becomes usable within three seconds in at least nine of ten cold-cache loads. Verify that loading the mission page makes no Cesium asset requests. Record timing, transferred bytes, and results.
+
+**Hosting.** Use 1,000 tracker opens per day and a 5,000-open day as planning scenarios. Include one orbital API request per normal tracker open, scheduled ingestion, D1 rows read and written, and static asset traffic. Assume no API cache hits when estimating Worker and D1 usage. Use preview measurements to estimate the cost of each operation and include other usage that shares the same account limits. Keep the higher scenario within half of each applicable daily quota, or revise the deployment and repeat the check. Record the assumptions and verify current plan limits before launch.
+
+**Service degradation.** Simulate an unavailable API. A new tracker session displays the mission and a tracking-unavailable message when no valid dataset can be loaded. An open session with a valid dataset follows the warning and cutoff policy in §8.6. The maintainer checks the Worker and D1 metrics and ingestion logs during release and investigates a missed scheduled refresh, sustained API failures, or usage that reaches half an applicable daily quota. Record where to find those signals and how to confirm recovery.
 
 ---
 
@@ -1368,7 +1266,7 @@ Performance targets must be verified on actual devices rather than assumed from 
 ### EIS-001 — Initialize repository
 
 **Tasks:**
-- Create repository.
+- Scaffold the application in the existing repository.
 - Initialize Astro.
 - Configure TypeScript.
 - Configure React.
@@ -1468,7 +1366,7 @@ Performance targets must be verified on actual devices rather than assumed from 
 **Tasks:**
 - Define repository contract.
 - Create in-memory test implementation.
-- Create Cloudflare KV implementation.
+- Create Cloudflare D1 implementation.
 
 **Acceptance criteria:**
 - Application logic depends only on the repository interface.
@@ -1480,12 +1378,13 @@ Performance targets must be verified on actual devices rather than assumed from 
 - Configure spacecraft selection.
 - Fetch orbital data.
 - Validate response.
-- Persist latest valid record.
+- Publish a valid candidate with the conditional D1 operation.
 - Record ingestion status.
 
 **Acceptance criteria:**
 - A failed update does not destroy valid cached data.
-- Repeated execution is safe.
+- An older update finishing after a newer one leaves the newer epoch available through the API.
+- Equal-epoch replays leave the published record unchanged.
 
 ### EIS-010 — Implement orbital-data API
 
@@ -1536,8 +1435,6 @@ Performance targets must be verified on actual devices rather than assumed from 
 **Tasks:**
 - Sample trajectory.
 - Generate orbit polyline.
-- Calculate ground track.
-- Handle antimeridian crossings.
 
 **Acceptance criteria:**
 - Predicted path renders without obvious discontinuities.
@@ -1576,7 +1473,6 @@ Performance targets must be verified on actual devices rather than assumed from 
 
 **Tasks:**
 - Add orbital polyline.
-- Add optional ground track.
 - Add visibility controls.
 
 **Acceptance criteria:**
@@ -1595,7 +1491,8 @@ Performance targets must be verified on actual devices rather than assumed from 
 
 **Acceptance criteria:**
 - The user can identify whether the displayed position is predicted.
-- Stale-data states are visible.
+- A prediction is labeled stale at the warning threshold. At the cutoff, predictions disappear and source details remain visible.
+- A rendering failure with usable elements can still show the HTML coordinate view. Missing or expired elements show an unavailable prediction instead.
 
 ### EIS-018 — Mobile and accessibility
 
@@ -1616,15 +1513,14 @@ Performance targets must be verified on actual devices rather than assumed from 
 ### EIS-019 — Configure Cloudflare Worker
 
 **Tasks:**
-- Wrangler configuration.
-- Static asset binding.
-- Worker API handler.
-- KV namespace.
-- Cron Trigger.
+- Configure the Worker entrypoint and static asset binding in Step 3.
+- Apply the D1 migration to the isolated preview database.
+- Add the API and scheduled handler. Verify scheduled ingestion with a controlled fixture before enabling upstream polling.
 
 **Acceptance criteria:**
-- Local Worker testing succeeds.
-- Static assets and API routes work together.
+- The preview serves static assets, the static 404 page, and the orbital API.
+- The scheduled handler can publish a validated dataset to preview D1.
+- Preview ingestion does not write to production D1.
 
 ### EIS-020 — Production deployment
 
@@ -1632,13 +1528,16 @@ Performance targets must be verified on actual devices rather than assumed from 
 - Configure production environment.
 - Deploy application.
 - Configure domain.
-- Verify HTTPS.
-- Run smoke tests.
+- Apply the production D1 migration.
+- Obtain and verify the first valid production dataset before public tracker cutover.
+- Verify HTTPS and the mission-to-tracker path.
+- Record rollback triggers, the known-good deployment, and D1 schema compatibility checks.
 
 **Acceptance criteria:**
 - Site loads at the configured domain.
-- API returns cached orbital data.
+- The API returns the selected spacecraft’s verified orbital dataset before cutover.
 - Scheduled ingestion runs successfully.
+- The recovery procedure identifies a deployable fallback.
 - No paid service is required.
 
 ### EIS-021 — Documentation
@@ -1676,6 +1575,7 @@ First Orbit is ready for release when:
 - External API failures are handled.
 - Application boundaries are maintained.
 - No critical runtime errors remain.
+- The mobile, hosting, and service-degradation checks in §18.3 pass.
 
 ### Infrastructure
 
@@ -1689,7 +1589,8 @@ First Orbit is ready for release when:
 
 - Architecture is documented.
 - Data sources are cited.
-- Licensing is addressed.
+- Data and imagery terms and attribution are documented.
+- Before the first public code release, select an open-source license and add it to the repository.
 - Local development is explained.
 - Scientific limitations are disclosed.
 
@@ -1704,7 +1605,7 @@ First Orbit is ready for release when:
 | Incorrect coordinates | Independent numerical validation |
 | CesiumJS bundle size | Lazy loading |
 | Free map imagery restrictions | Use licensed assets or compliant imagery provider |
-| Cloudflare KV consistency | Atomic dataset values and version timestamps |
+| Delayed ingestion can publish out of order | Conditional D1 write based on orbital epoch |
 | Worker CPU constraints | Keep processing lightweight |
 | CelesTrak API restrictions | Conservative ingestion and caching |
 | Cloudflare lock-in | Repository interfaces and portable core |
@@ -1713,107 +1614,49 @@ First Orbit is ready for release when:
 
 ---
 
-# 22. Revised Architecture Decisions
+# 22. Architecture Decisions
 
-The following decisions extend the main PRD.
-
-## ADR-009 — Cloudflare KV for Initial Orbital Persistence
-
-**Status:** Proposed for acceptance
-
-Use Cloudflare KV as the initial persistent store for cached orbital elements.
-
-Reason: the data access pattern is simple key-based retrieval and does not currently justify a relational database.
-
-## ADR-010 — OMM JSON as Orbital Data Format
-
-**Status:** Proposed for acceptance
-
-Prefer CCSDS OMM JSON from CelesTrak for ingestion and propagation.
-
-Preserve source metadata and validate required fields.
-
-## ADR-011 — Client-Side SGP4 Propagation
-
-**Status:** Accepted from PRD
-
-Perform spacecraft position calculations in the browser.
-
-Do not continuously calculate positions on Cloudflare Workers.
-
-## ADR-012 — Astro Static Generation
-
-**Status:** Proposed for acceptance
-
-Generate mission and informational pages statically.
-
-Use React only for genuinely interactive experiences.
-
-## ADR-013 — Single Repository, Modular Monolith
-
-**Status:** Proposed for acceptance
-
-Use one repository and deployment unit for First Orbit.
-
-Avoid introducing monorepo tooling prematurely.
-
-## ADR-014 — Token-Free 3D Globe
-
-**Status:** Proposed for acceptance
-
-The initial tracking experience must not rely on a paid Cesium ion subscription or other paid imagery service.
-
-Any external imagery used must comply with attribution and usage requirements.
+The [ADR index](decisions/README.md) records the accepted decisions and their approval status. Key records for First Orbit include [OMM ingestion](decisions/010-omm-json-as-orbital-data-format.md), [browser-side SGP4](decisions/011-client-side-sgp4-propagation.md), [static generation](decisions/012-astro-static-generation.md), [single-package layout](decisions/013-single-repository-modular-monolith.md), [the locally hosted Earth texture](decisions/014-token-free-3d-globe.md), and [D1 orbital persistence and refresh](decisions/016-d1-for-first-orbit-orbital-persistence.md).
 
 ---
 
 # 23. Implementation Sequence
 
-The recommended order is:
+## Step 1 — Foundation
 
-**Step 1 — Foundation**
-- Repository.
-- Astro.
-- React.
-- TypeScript.
-- CI.
-- Static Cloudflare deployment.
+Scaffold the existing repository with Astro, React, TypeScript, and CI. Deploy the generated site to a Cloudflare preview using a static-only configuration. Introduce the Worker entrypoint, D1 binding, and Cron trigger in Step 3.
 
-**Step 2 — Content**
-- Mission model.
-- Spacecraft model.
-- One verified mission page.
-- Navigation.
+**Exit check:** CI builds the site and the preview serves the homepage and static 404 page.
 
-**Step 3 — Data**
-- CelesTrak connector.
-- OMM validation.
-- Orbital repository.
-- Cloudflare KV.
-- Scheduled ingestion.
-- API.
+## Step 2 — Content and spacecraft selection
 
-**Step 4 — Mathematics**
-- SGP4 integration.
-- Coordinate conversion.
-- Independent verification.
-- Orbit-path calculations.
+Add the mission and spacecraft models, build the verified Sentinel-2 mission page, and add navigation. Run the spacecraft comparison in §8.1. The comparison may use a local validation tool or an independent reference implementation before the shared application initializer exists.
 
-**Step 5 — Visualization**
-- CesiumJS.
-- Spacecraft marker.
-- Predicted orbit.
-- Tracking details.
-- Mobile fallback.
+**Exit check:** The mission page builds, and the selected spacecraft has a verified identity, usable orbital sample, and documented terms for the intended use.
 
-**Step 6 — Release**
-- Integration testing.
-- Performance review.
-- Data and image licensing review.
-- Production deployment.
-- Documentation.
+## Step 3 — Data and preview Worker
 
-A simple static prototype can be deployed after Step 1. Later steps should be independently testable and incrementally integrated.
+Build the CelesTrak connector, the OMM validator, and a shared OMM-to-SGP4 initializer before ingestion accepts records. Configure the preview Worker with its own D1 database and apply the schema migration. Add the conditional write, the Worker API, and scheduled ingestion. Test the scheduled handler against a controlled fixture before enabling preview polling. Coordinate preview and production polling so they do not duplicate upstream requests for the same dataset.
+
+**Exit check:** Verify static and 404 routing, orbital API responses, scheduled ingestion, and preservation of the most recent valid epoch during out-of-order writes and failed updates.
+
+## Step 4 — Orbital calculations
+
+Reuse the shared initializer. Implement prediction at explicit timestamps, coordinate conversion, and orbit-path calculations. Run the published-case numerical checks and the operator-orbit accuracy comparison in §17.3.
+
+**Exit check:** The propagation and coordinate checks pass with documented frames, timestamps, and tolerances. The operator comparison supports the proposed refresh cadence and freshness thresholds.
+
+## Step 5 — Visualization
+
+Verify the local Earth texture’s rights, attribution, and mobile performance as specified by ADR-014 before integrating it. Build the globe, predicted marker and path, tracking details, freshness states, and the HTML alternative.
+
+**Exit check:** On representative desktop and mobile devices, verify the mission-to-tracker flow, freshness transitions without reloading, and access to usable prediction details when WebGL fails.
+
+## Step 6 — Release
+
+Review performance and reconfirm data and imagery terms. Apply the production schema migration and deploy the Worker. Before publishing the tracker link or routing public traffic to the new deployment, obtain the first valid production dataset and verify it through the production API. Document and verify the known-good static or application deployment to restore if smoke checks fail. Check D1 schema compatibility before rolling back application code.
+
+**Exit check:** Confirm HTTPS, mission-to-tracker navigation, the selected spacecraft’s orbital API response, scheduled ingestion, and the documented recovery path.
 
 ---
 
@@ -1836,7 +1679,7 @@ A simple static prototype can be deployed after Step 1. Later steps should be in
 
 - Workers: https://developers.cloudflare.com/workers/
 - Static Assets: https://developers.cloudflare.com/workers/static-assets/
-- KV: https://developers.cloudflare.com/kv/
+- D1: https://developers.cloudflare.com/d1/
 - Cron Triggers: https://developers.cloudflare.com/workers/configuration/cron-triggers/
 - Wrangler: https://developers.cloudflare.com/workers/wrangler/
 
@@ -1866,15 +1709,15 @@ The proposed architecture deliberately avoids unnecessary infrastructure:
 - CesiumJS for visualization.
 - satellite.js for orbital calculations.
 - Cloudflare Workers for a minimal API.
-- Cloudflare KV for orbital data.
+- Cloudflare D1 for orbital data.
 - Cron Triggers for periodic ingestion.
 - GitHub Actions for quality and deployment.
 
 The design keeps application logic portable, allowing future migration to Vercel without rewriting the main product.
 
-The recommended first implementation task is **EIS-001 — Initialize the repository**, followed by establishing a reproducible static Cloudflare deployment before introducing external data integrations.
+The recommended first implementation task is **EIS-001 — Scaffold the application in the existing repository**, followed by establishing a reproducible static Cloudflare deployment before introducing external data integrations.
 
 **Document:** Europe in Space — First Orbit TDD  
 **Version:** 1.0  
-**Status:** Ready for engineering implementation  
+**Status:** First Orbit implementation plan with validation checkpoints\
 **Next deliverable:** Repository initialization and first deployable vertical slice.

@@ -17,7 +17,7 @@ Keep mission logic, orbital calculations, data validation, data source connector
 - Limit future migration primarily to hosting and persistence concerns.
 
 ## Consequences
-- Cloudflare-specific KV/Workers types belong at infrastructure edges.
+- Cloudflare-specific D1/Workers types belong at infrastructure edges.
 - A full migration may require data export, a replacement datastore, and new scheduled jobs.
 - Portability means avoiding a *substantial core application rewrite*, not guaranteeing zero migration effort.
 - Deployment portability should be checked through build/test contracts, not by maintaining duplicate production stacks.
