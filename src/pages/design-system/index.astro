@@ -1,0 +1,294 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHeader from "../../components/ui/PageHeader.astro";
+import Button from "../../components/ui/Button.astro";
+import Badge from "../../components/ui/Badge.astro";
+import Icon from "../../components/ui/Icon.astro";
+import FeatureCards from "../../components/sections/FeatureCards.astro";
+const colors = [
+  { name: "Deep space", token: "--background", hex: "#050D17" },
+  { name: "Surface", token: "--surface", hex: "#0C1724" },
+  { name: "Raised surface", token: "--surface-raised", hex: "#142231" },
+  { name: "Orbit blue", token: "--accent", hex: "#58B6FA" },
+  { name: "Primary text", token: "--text", hex: "#F4F6FA" },
+  { name: "Secondary text", token: "--text-muted", hex: "#AEBACB" },
+];
+---
+
+<BaseLayout title="Design system">
+  <div class="system-heading">
+    <PageHeader
+      eyebrow="The foundations"
+      title="A system for exploration."
+      description="One visual language. From the first glimpse of Earth to the details of a distant mission."
+    />
+    <Badge tone="accent">Design system · v0.1</Badge>
+  </div>
+  <nav class="system-nav" aria-label="Design system sections">
+    {["Color", "Typography", "Components", "Spacing", "Layouts"].map((n) => (
+      <a href={`#${n.toLowerCase()}`}>{n}</a>
+    ))}
+  </nav>
+  <section class="system-section" id="color">
+    <header>
+      <h2 class="section-title">Color, with a purpose.</h2>
+      <p class="section-description">
+        Deep space gives imagery room to breathe. Orbit blue guides the next
+        action.
+      </p>
+    </header>
+    <div class="swatches">
+      {colors.map((c) => (
+        <div class="swatch">
+          <div class="swatch-color" style={`--swatch:${c.hex}`}></div>
+          <div class="swatch-label">
+            <strong>{c.name}</strong>
+            <code>{c.hex}</code>
+            <code>{c.token}</code>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+  <section class="system-section" id="typography">
+    <header>
+      <h2 class="section-title">A clear view, at every scale.</h2>
+      <p class="section-description">
+        Inter Variable, hosted locally. Fluid headings, comfortable reading and
+        a restrained weight range.
+      </p>
+    </header>
+    <div class="type-row">
+      <span class="type-display">Made for discovery.</span>
+      <small>Display · 36–78px / 500</small>
+    </div>
+    <div class="type-row">
+      <span class="type-heading">The next chapter in space.</span>
+      <small>Heading · 24–32px / 500</small>
+    </div>
+    <div class="type-row">
+      <span class="type-body">
+        Discover missions, spacecraft and the science behind them.
+      </span>
+      <small>Body · 16–24px / 400</small>
+    </div>
+    <div class="type-row">
+      <span class="eyebrow">A different perspective</span>
+      <small>Eyebrow · 11–15px / 550</small>
+    </div>
+  </section>
+  <section class="system-section" id="components">
+    <header>
+      <h2 class="section-title">Small parts. Shared behavior.</h2>
+      <p class="section-description">
+        Accessible controls with visible focus, generous targets and a useful
+        state for every interaction.
+      </p>
+    </header>
+    <div class="component-grid">
+      <div class="panel">
+        <h3>Actions</h3>
+        <div class="row">
+          <Button href="/missions/" icon="arrow-right">
+            Explore missions
+          </Button>
+          <Button href="/satellites/" variant="secondary">
+            Track satellites
+          </Button>
+        </div>
+        <div class="row">
+          <Button variant="quiet" href="/about/">
+            Learn about the project
+          </Button>
+          <Button disabled>Coming soon</Button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Labels & status</h3>
+        <div class="row">
+          <Badge tone="success">Available</Badge>
+          <Badge tone="accent">Layout preview</Badge>
+          <Badge>Coming in First Orbit</Badge>
+        </div>
+        <p class="section-description">
+          Status is always written in words. Color adds meaning without carrying
+          it alone.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Selection chips</h3>
+        <div class="chips" data-demo-chips>
+          {["All missions", "Earth observation", "Science", "Exploration"].map(
+            (n, i) => (
+              <button type="button" class="chip" aria-pressed={i === 0}>
+                {n}
+              </button>
+            ),
+          )}
+        </div>
+        <p class="inline-status" data-demo-selection role="status">
+          Showing: All missions
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Search field</h3>
+        <label class="field-label" for="demo-search">
+          Find a component
+        </label>
+        <input
+          class="input"
+          type="search"
+          id="demo-search"
+          placeholder="Try “button” or “card”"
+          aria-describedby="demo-search-result"
+        />
+        <p class="inline-status" id="demo-search-result" role="status">
+          Search the components on this page.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Icons</h3>
+        <div class="row">
+          {[
+            "planet",
+            "rocket-launch",
+            "globe-hemisphere-west",
+            "binoculars",
+            "image",
+            "stack",
+            "compass",
+            "github-logo",
+          ].map((n) => (
+            <span title={n}>
+              <Icon name={n} size={27} />
+            </span>
+          ))}
+        </div>
+        <p class="section-description">
+          Phosphor Regular. One family, consistent weight. Decorative icons stay
+          out of the reading order.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Search overlay</h3>
+        <p class="section-description">
+          A shared search dialog with filtering, empty states and keyboard focus
+          return.
+        </p>
+        <button
+          class="button button--secondary"
+          type="button"
+          data-open-search
+          style="margin-top:18px"
+        >
+          <Icon name="magnifying-glass" size={20} /> Try site search
+        </button>
+      </div>
+    </div>
+  </section>
+  <section class="system-section" id="spacing">
+    <header>
+      <h2 class="section-title">Room to explore.</h2>
+      <p class="section-description">
+        A 4px spacing base. Three corner radii: 10px controls, 16px panels and
+        24px feature cards.
+      </p>
+    </header>
+    <div class="panel space-scale">
+      {[4, 8, 12, 16, 24, 32, 48, 64, 96].map((n) => (
+        <div class="space-item">
+          <div class="space-block" style={`--measure:${n}px`}></div>
+          <span>{n}px</span>
+        </div>
+      ))}
+    </div>
+  </section>
+  <section class="system-section" id="layouts">
+    <header>
+      <h2 class="section-title">Same system. Every screen.</h2>
+      <p class="section-description">
+        Content leads the breakpoint. Wide views become balanced columns;
+        compact views become a readable stack.
+      </p>
+    </header>
+    <div class="layout-rules">
+      <div class="panel">
+        <code>320–599px</code>
+        <h3 style="margin-top:14px">Compact</h3>
+        <p>
+          Single column, 22px gutters, an expandable menu, and comfortable touch
+          targets.
+        </p>
+      </div>
+      <div class="panel">
+        <code>600–899px</code>
+        <h3 style="margin-top:14px">Medium</h3>
+        <p>
+          Two feature columns, a full-width data card and the same compact
+          navigation.
+        </p>
+      </div>
+      <div class="panel">
+        <code>900px and up</code>
+        <h3 style="margin-top:14px">Wide</h3>
+        <p>
+          Three feature columns, full navigation, fluid page gutters and a
+          1512px content limit.
+        </p>
+      </div>
+    </div>
+    <div style="margin-top:28px">
+      <FeatureCards />
+    </div>
+  </section>
+  <div class="panel">
+    <h2 class="section-title">Built for the next orbit.</h2>
+    <p class="section-description">
+      This is the visual foundation. Mission content, orbital calculations and
+      the 3D tracker can grow within the same shell.
+    </p>
+    <div class="row" style="margin-top:22px">
+      <Button href="/" icon="arrow-right">
+        See the homepage
+      </Button>
+      <Button href="/missions/" variant="secondary">
+        Explore the layout
+      </Button>
+    </div>
+  </div>
+</BaseLayout>
+<script>
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-demo-chips] button")
+    .forEach((b) =>
+      b.addEventListener("click", () => {
+        document
+          .querySelectorAll("[data-demo-chips] button")
+          .forEach((other) =>
+            other.setAttribute("aria-pressed", String(other === b)),
+          );
+        const status = document.querySelector("[data-demo-selection]");
+        if (status) status.textContent = `Showing: ${b.textContent}`;
+      }),
+    );
+  const field = document.querySelector<HTMLInputElement>("#demo-search");
+  const components = [
+    { name: "Button", words: "button action primary secondary quiet disabled" },
+    { name: "Badge", words: "badge label status available" },
+    { name: "Chip", words: "chip selection filter" },
+    { name: "Input", words: "input search field" },
+    { name: "Icon", words: "icon phosphor" },
+    { name: "Card", words: "card panel feature" },
+  ];
+  field?.addEventListener("input", () => {
+    const query = field.value.trim().toLowerCase();
+    const matches = components.filter((c) => c.words.includes(query));
+    const result = document.getElementById("demo-search-result");
+    if (result)
+      result.textContent = query
+        ? matches.length
+          ? `Found: ${matches.map((c) => c.name).join(", ")}.`
+          : "No matching component. Try “button” or “card”."
+        : "Search the components on this page.";
+  });
+</script>

@@ -1,26 +1,47 @@
 ---
-import '../styles/global.css';
-interface Props { title: string; description?: string }
-const { title, description = 'Explore Europe’s journey into space.' } = Astro.props;
+import "../styles/global.css";
+import SiteHeader from "../components/layout/SiteHeader.astro";
+import SiteFooter from "../components/layout/SiteFooter.astro";
+import SearchDialog from "../components/layout/SearchDialog.astro";
+interface Props {
+  title: string;
+  description?: string;
+  home?: boolean;
+}
+const {
+  title,
+  description = "Explore European space missions, spacecraft and the science shaping our understanding of Earth and beyond.",
+  home = false,
+} = Astro.props;
 ---
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#050d17" />
+    <link rel="icon" href="/icons/planet.svg" type="image/svg+xml" />
+    <link
+      rel="preload"
+      href="/fonts/inter-latin-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    {home && <link rel="preload" href="/images/europe-night.webp" as="image" />}
     <title>{title} | Europe in Space</title>
   </head>
-  <body>
-    <header>
-      <nav aria-label="Main navigation" class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-6">
-        <a href="/" class="font-bold tracking-wide">Europe in Space</a>
-        <div class="flex gap-6 text-sm"><a href="/about/">About</a><a href="/data-sources/">Data sources</a></div>
-      </nav>
-    </header>
-    <main id="main" class="mx-auto max-w-5xl px-6 py-16"><slot /></main>
-    <footer class="mx-auto max-w-5xl border-t border-slate-700 px-6 py-8 text-sm text-slate-400">
-      An independent project, not affiliated with or endorsed by ESA or the European Union.
-    </footer>
+  <body class:list={[home ? "home-page" : "inner-page"]}>
+    <a href="#main" class="skip-link">
+      Skip to content
+    </a>
+    <SiteHeader />
+    <main id="main" class:list={[!home && "shell page-main"]}>
+      <slot />
+    </main>
+    <SiteFooter />
+    <SearchDialog />
   </body>
 </html>

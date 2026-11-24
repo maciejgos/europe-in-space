@@ -1,0 +1,157 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHeader from "../../components/ui/PageHeader.astro";
+import Badge from "../../components/ui/Badge.astro";
+import Button from "../../components/ui/Button.astro";
+import Icon from "../../components/ui/Icon.astro";
+---
+
+<BaseLayout title="Sentinel-2 · layout preview">
+  <a href="/missions/" class="back-link">
+    <Icon name="arrow-left" size={18} /> Missions
+  </a>
+  <section class="detail-banner">
+    <img src="/images/sentinel-feature.webp" width="1942" height="809" alt="" />
+    <PageHeader
+      eyebrow="Earth observation"
+      title="Sentinel-2"
+      description="A closer look at our changing planet."
+    >
+      <div style="margin-top:24px">
+        <Badge tone="accent">Mission layout preview</Badge>
+      </div>
+    </PageHeader>
+  </section>
+  <div class="detail-tabs" role="tablist" aria-label="Mission sections">
+    {["Overview", "Spacecraft", "Orbit", "Sources"].map((n, i) => (
+      <button
+        class="chip"
+        type="button"
+        role="tab"
+        id={`tab-${n.toLowerCase()}`}
+        aria-controls={`panel-${n.toLowerCase()}`}
+        aria-selected={i === 0}
+        aria-pressed={i === 0}
+        tabindex={i === 0 ? 0 : -1}
+      >
+        {n}
+      </button>
+    ))}
+  </div>
+  <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+    <div class="detail-grid">
+      <div class="panel">
+        <h2>Seeing Earth differently.</h2>
+        <p>
+          This sample page demonstrates the mission layout: a clear
+          introduction, connected spacecraft, orbit information and original
+          sources.
+        </p>
+        <p style="margin-top:16px">
+          The first mission’s full, verified scientific content will be added in
+          the next milestone.
+        </p>
+        <div class="row">
+          <Button href="/satellites/" variant="secondary" icon="planet">
+            Explore orbits
+          </Button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Part of a bigger picture.</h2>
+        <p>
+          Mission information will connect to the data and organizations behind
+          it. Every published dataset will keep its source and freshness
+          visible.
+        </p>
+        <div class="row">
+          <Badge>Curated content</Badge>
+          <Badge>Sources first</Badge>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section
+    role="tabpanel"
+    id="panel-spacecraft"
+    aria-labelledby="tab-spacecraft"
+    hidden
+  >
+    <div class="panel">
+      <h2 class="section-title">The spacecraft behind the mission.</h2>
+      <p class="section-description">
+        Spacecraft profiles and their connection to the mission are planned for
+        First Orbit. This panel demonstrates the shared detail layout.
+      </p>
+    </div>
+  </section>
+  <section role="tabpanel" id="panel-orbit" aria-labelledby="tab-orbit" hidden>
+    <div class="panel">
+      <h2 class="section-title">An orbit to explore.</h2>
+      <p class="section-description">
+        Predicted positions will be calculated from public orbital elements. No
+        orbital data is connected in this design preview.
+      </p>
+      <div style="margin-top:22px">
+        <Button href="/satellites/" variant="secondary">
+          About the tracker
+        </Button>
+      </div>
+    </div>
+  </section>
+  <section
+    role="tabpanel"
+    id="panel-sources"
+    aria-labelledby="tab-sources"
+    hidden
+  >
+    <div class="panel">
+      <h2 class="section-title">Go to the source.</h2>
+      <p class="section-description">
+        Learn more from{" "}
+        <a
+          class="text-link"
+          href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-2"
+        >
+          ESA’s Sentinel-2 overview
+        </a>
+        . Page artwork is an AI-generated illustration, not satellite imagery.
+      </p>
+      <div style="margin-top:22px">
+        <Button href="/data-sources/" variant="secondary">
+          Our approach to data
+        </Button>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+<script>
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>("[role=tab]")];
+  const activate = (tab: HTMLButtonElement) => {
+    tabs.forEach((t) => {
+      const active = t === tab;
+      t.setAttribute("aria-selected", String(active));
+      t.setAttribute("aria-pressed", String(active));
+      t.tabIndex = active ? 0 : -1;
+      const panel = document.getElementById(
+        t.getAttribute("aria-controls") || "",
+      );
+      if (panel) panel.hidden = !active;
+    });
+  };
+  tabs.forEach((tab, i) => {
+    tab.addEventListener("click", () => activate(tab));
+    tab.addEventListener("keydown", (e) => {
+      let next = i;
+      if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+      else if (e.key === "ArrowLeft")
+        next = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = tabs.length - 1;
+      else return;
+      e.preventDefault();
+      activate(tabs[next]);
+      tabs[next].focus();
+    });
+  });
+</script>

@@ -1,7 +1,81 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/ui/PageHeader.astro";
+import Badge from "../components/ui/Badge.astro";
+const sources = [
+  {
+    name: "ESA",
+    purpose: "Missions and spacecraft",
+    url: "https://www.esa.int/",
+  },
+  {
+    name: "CelesTrak",
+    purpose: "Orbital elements for predicted spacecraft positions",
+    url: "https://celestrak.org/",
+  },
+  {
+    name: "Copernicus Data Space",
+    purpose: "Earth observation data",
+    url: "https://dataspace.copernicus.eu/",
+  },
+  {
+    name: "EUMETSAT",
+    purpose: "Meteorological satellite data",
+    url: "https://www.eumetsat.int/",
+  },
+  {
+    name: "ESO",
+    purpose: "Observatories and astronomical imagery",
+    url: "https://www.eso.org/",
+  },
+  {
+    name: "ESA/Hubble",
+    purpose: "Space telescope imagery",
+    url: "https://esahubble.org/",
+  },
+];
 ---
+
 <BaseLayout title="Data sources">
-  <h1 class="text-4xl font-bold">Data sources</h1>
-  <p class="mt-6 max-w-2xl leading-relaxed text-slate-300">The planned satellite tracker will use orbital elements from <a class="text-sky-300 underline" href="https://celestrak.org/">CelesTrak</a>. Source details, timestamps and limitations will accompany published data.</p>
+  <PageHeader
+    eyebrow="Open to exploration"
+    title="Data sources"
+    description="The story behind every orbit starts with a source. Here are the organizations we plan to build on."
+  />
+  <div class="component-grid">
+    {sources.map((s) => (
+      <a href={s.url} class="panel mission-card-copy">
+        <div class="row" style="justify-content:space-between">
+          <h2 class="section-title">{s.name}</h2>
+          <Badge>Planned integration</Badge>
+        </div>
+        <p class="section-description">{s.purpose}</p>
+      </a>
+    ))}
+  </div>
+  <div class="prose">
+    <h2>Transparent from the start.</h2>
+    <p>
+      When data integrations are added, published data will include the original
+      source, retrieval timestamp, relevant observation or orbital epoch and
+      known limitations.
+    </p>
+    <p>
+      Public availability does not mean unrestricted reuse. Each dataset and
+      image remains subject to its original license and attribution
+      requirements.
+    </p>
+    <h2>About the artwork.</h2>
+    <p>
+      The Earth and spacecraft artwork used in this design preview was generated
+      with AI from the supplied design references. These images are decorative
+      illustrations, not scientific observations or representations of live
+      spacecraft positions.
+    </p>
+    <p>
+      Typography uses the locally hosted Inter font (SIL Open Font License).
+      Interface icons use Phosphor (MIT license). License files are included
+      with the assets.
+    </p>
+  </div>
 </BaseLayout>

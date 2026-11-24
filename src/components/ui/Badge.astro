@@ -1,0 +1,10 @@
+---
+interface Props {
+  tone?: "accent" | "success" | "neutral";
+}
+const { tone = "neutral" } = Astro.props;
+---
+
+<span class:list={["badge", `badge--${tone}`]}>
+  <slot />
+</span>

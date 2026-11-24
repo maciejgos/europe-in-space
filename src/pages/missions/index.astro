@@ -1,0 +1,115 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHeader from "../../components/ui/PageHeader.astro";
+import Badge from "../../components/ui/Badge.astro";
+import Icon from "../../components/ui/Icon.astro";
+---
+
+<BaseLayout title="European space missions">
+  <PageHeader
+    eyebrow="Mission explorer"
+    title="European space missions"
+    description="From our home planet to the far reaches of the Solar System. Get to know the missions expanding our horizons."
+  />
+  <div class="catalog-tools">
+    <div class="chips" aria-label="Filter missions">
+      {[
+        "All missions",
+        "Earth observation",
+        "Science",
+        "Exploration",
+        "Technology",
+      ].map((n, i) => (
+        <button
+          type="button"
+          class="chip"
+          data-mission-filter={n}
+          aria-pressed={i === 0}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+    <label>
+      <span class="sr-only">Search missions</span>
+      <input
+        type="search"
+        class="input catalog-search"
+        placeholder="Search missions…"
+        id="mission-query"
+      />
+    </label>
+  </div>
+  <div class="mission-grid">
+    <a
+      href="/missions/sentinel-2/"
+      class="panel mission-card"
+      data-mission-card
+    >
+      <img
+        src="/images/sentinel-feature.webp"
+        width="1942"
+        height="809"
+        alt="Illustration of an Earth observation satellite above Earth"
+      />
+      <div class="mission-card-copy">
+        <h2>Sentinel-2</h2>
+        <p>A closer look at our changing planet.</p>
+        <div class="mission-card-foot">
+          <Badge tone="accent">Earth observation</Badge>
+          <Icon name="arrow-right" />
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="panel catalog-empty" hidden>
+    <Icon name="compass" size={36} />
+    <h2 style="margin-top:18px">More to discover, soon.</h2>
+    <p>No missions match this selection in the layout preview.</p>
+    <button type="button" class="button button--secondary" id="reset-missions">
+      Show all missions
+    </button>
+  </div>
+  <p class="catalog-note" role="status" id="mission-count">
+    1 sample mission · Design preview. The full catalog is coming in a later
+    milestone.
+  </p>
+</BaseLayout>
+<script>
+  let selected = "All missions";
+  const input = document.querySelector<HTMLInputElement>("#mission-query");
+  const filters = [
+    ...document.querySelectorAll<HTMLButtonElement>("[data-mission-filter]"),
+  ];
+  const update = () => {
+    const query = input?.value.trim().toLowerCase() || "";
+    const visible =
+      (selected === "All missions" || selected === "Earth observation") &&
+      "sentinel-2 earth observation copernicus".includes(query);
+    const card = document.querySelector<HTMLElement>("[data-mission-card]");
+    const empty = document.querySelector<HTMLElement>(".catalog-empty");
+    const count = document.getElementById("mission-count");
+    if (card) card.hidden = !visible;
+    if (empty) empty.hidden = visible;
+    if (count)
+      count.textContent = `${visible ? "1 sample mission" : "0 missions"} · Design preview. The full catalog is coming in a later milestone.`;
+    filters.forEach((b) =>
+      b.setAttribute(
+        "aria-pressed",
+        String(b.dataset.missionFilter === selected),
+      ),
+    );
+  };
+  filters.forEach((b) =>
+    b.addEventListener("click", () => {
+      selected = b.dataset.missionFilter || "All missions";
+      update();
+    }),
+  );
+  input?.addEventListener("input", update);
+  document.querySelector("#reset-missions")?.addEventListener("click", () => {
+    selected = "All missions";
+    if (input) input.value = "";
+    update();
+  });
+</script>

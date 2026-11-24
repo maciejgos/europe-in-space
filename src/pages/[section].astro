@@ -1,0 +1,58 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/ui/PageHeader.astro";
+import Badge from "../components/ui/Badge.astro";
+import Button from "../components/ui/Button.astro";
+import { sections } from "../data/site";
+export function getStaticPaths() {
+  return sections
+    .filter((s) => s.slug !== "missions")
+    .map((s) => ({ params: { section: s.slug }, props: { section: s } }));
+}
+const { section } = Astro.props;
+const satellite = section.slug === "satellites";
+---
+
+<BaseLayout title={section.title}>
+  <div class="coming-layout">
+    <div>
+      <PageHeader
+        eyebrow={section.title}
+        title={section.heading}
+        description={section.summary}
+      />
+      <div class="coming-note">
+        <Badge tone="accent">
+          {satellite ? "Coming in First Orbit" : "On the horizon"}
+        </Badge>
+        <p>
+          {satellite
+            ? "The tracker is in development. It will show predicted spacecraft positions from public orbital elements, with a source and timestamp for every orbit."
+            : "This part of Europe in Space is taking shape. The first release starts with a European mission and the predicted orbit of one of its spacecraft."}
+        </p>
+      </div>
+      <div class="row">
+        <Button href="/missions/" icon="arrow-right">
+          Explore missions
+        </Button>
+        <Button href="/about/" variant="secondary">
+          About the project
+        </Button>
+      </div>
+    </div>
+    <figure class="coming-image">
+      <img
+        src="/images/europe-night.webp"
+        width="1672"
+        height="941"
+        alt="Illustrative view of Europe’s city lights from space"
+      />
+      <figcaption class="image-caption">
+        Illustrative artwork ·{" "}
+        {satellite
+          ? "No live orbital data connected"
+          : "Independent exploration. Open space data."}
+      </figcaption>
+    </figure>
+  </div>
+</BaseLayout>
