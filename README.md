@@ -115,7 +115,7 @@ Europe in Space is a personal project being developed incrementally.
 The first milestone focuses on demonstrating the platform's core experience.
 
 - [x] Set up the Astro application and Cloudflare Worker configuration.
-- [ ] Provision Cloudflare resources and deploy the application.
+- [x] Provision Cloudflare resources and deploy the application.
 - [x] Create the initial design system and responsive layout.
 - [ ] Implement the first European mission detail page.
 - [ ] Integrate CelesTrak orbital data.
