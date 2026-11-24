@@ -1,0 +1,101 @@
+---
+import Icon from "../ui/Icon.astro";
+import { searchEntries } from "../../data/site";
+---
+
+<dialog id="site-search" class="search-dialog" aria-labelledby="search-title">
+  <div class="search-top">
+    <Icon name="magnifying-glass" />
+    <label class="sr-only" for="site-search-input" id="search-title">
+      Search Europe in Space
+    </label>
+    <input
+      id="site-search-input"
+      type="search"
+      placeholder="Search missions, satellites, and more…"
+      autocomplete="off"
+    />
+    <button
+      type="button"
+      class="icon-button"
+      data-close-search
+      aria-label="Close search"
+    >
+      <Icon name="x" size={20} />
+    </button>
+  </div>
+  <p class="search-caption" id="search-count" role="status" aria-live="polite">
+    Explore Europe in Space
+  </p>
+  <div class="search-results">
+    {searchEntries.map((e) => (
+      <a
+        href={e.href}
+        data-search-entry
+        data-search-text={`${e.title} ${e.description}`.toLowerCase()}
+      >
+        <Icon name={e.icon} />
+        <span>
+          <strong>{e.title}</strong>
+          <small>{e.description}</small>
+        </span>
+        <Icon name="arrow-up-right" size={18} />
+      </a>
+    ))}
+  </div>
+  <p class="search-empty" hidden>
+    No results found. Try “missions”, “Sentinel”, or “Earth”.
+  </p>
+  <div class="search-bottom">
+    <span>Find your next discovery</span>
+    <kbd>esc to close</kbd>
+  </div>
+</dialog>
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>("#site-search");
+  const input = document.querySelector<HTMLInputElement>("#site-search-input");
+  const entries = [
+    ...document.querySelectorAll<HTMLElement>("[data-search-entry]"),
+  ];
+  const count = document.querySelector("#search-count");
+  const empty = document.querySelector<HTMLElement>(".search-empty");
+  const filter = () => {
+    const q = input?.value.trim().toLowerCase() || "";
+    let visible = 0;
+    entries.forEach((e) => {
+      e.hidden = !e.dataset.searchText?.includes(q);
+      if (!e.hidden) visible++;
+    });
+    if (count)
+      count.textContent = q
+        ? `${visible} ${visible === 1 ? "result" : "results"}`
+        : "Explore Europe in Space";
+    if (empty) empty.hidden = visible > 0;
+  };
+  document.querySelectorAll("[data-open-search]").forEach((b) =>
+    b.addEventListener("click", () => {
+      if (dialog && input) {
+        input.value = "";
+        filter();
+        dialog.showModal();
+        input.focus();
+      }
+    }),
+  );
+  document
+    .querySelector("[data-close-search]")
+    ?.addEventListener("click", () => dialog?.close());
+  input?.addEventListener("input", filter);
+  dialog?.addEventListener("click", (e) => {
+    if (e.target === dialog) {
+      const r = dialog.getBoundingClientRect();
+      if (
+        e.clientX < r.left ||
+        e.clientX > r.right ||
+        e.clientY < r.top ||
+        e.clientY > r.bottom
+      )
+        dialog.close();
+    }
+  });
+</script>

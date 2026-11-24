@@ -116,7 +116,7 @@ The first milestone focuses on demonstrating the platform's core experience.
 
 - [x] Set up the Astro application and Cloudflare Worker configuration.
 - [ ] Provision Cloudflare resources and deploy the application.
-- [ ] Create the initial design system and responsive layout.
+- [x] Create the initial design system and responsive layout.
 - [ ] Implement the first European mission detail page.
 - [ ] Integrate CelesTrak orbital data.
 - [ ] Implement browser-based orbital calculations.
@@ -187,7 +187,11 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open the local URL printed by Astro. Other checks are available with `pnpm check`, `pnpm test`, `pnpm build`, and `pnpm test:e2e`. Install the browser for the end-to-end test once with `pnpm exec playwright install chromium`.
+Open the local URL printed by Astro. The homepage is at `/`, the interactive component reference is at `/design-system/`, and `/missions/` demonstrates catalog filtering and a mission layout preview. Other exploration areas have responsive starter layouts with explicit development status. No orbital data is connected yet.
+
+Design rationale, scope and asset information are in [the initial design brief](docs/designs/initial-design-system.md).
+
+Other checks are available with `pnpm check`, `pnpm test`, `pnpm build`, and `pnpm test:e2e`. Install the browser for the end-to-end test once with `pnpm exec playwright install chromium`.
 
 For a local preview of the Worker and built static assets, run `pnpm build` followed by `pnpm exec wrangler dev`. The Worker reserves `/api/*`, which currently returns 404. D1, scheduled ingestion, orbital calculations, and the tracker have not yet been implemented; deployment requires Cloudflare configuration and provisioning.
 

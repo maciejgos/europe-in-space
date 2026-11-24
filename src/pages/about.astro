@@ -1,8 +1,46 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/ui/PageHeader.astro";
+import Button from "../components/ui/Button.astro";
 ---
+
 <BaseLayout title="About">
-  <h1 class="text-4xl font-bold">About Europe in Space</h1>
-  <p class="mt-6 max-w-2xl leading-relaxed text-slate-300">Europe in Space is an independent project exploring European space missions and science through interactive visualizations and public data.</p>
-  <p class="mt-4 max-w-2xl leading-relaxed text-slate-300">The first milestone will connect a curated mission to a prediction of a spacecraft’s orbit. Predictions will not be live telemetry and must not be used for operational or safety-critical purposes.</p>
+  <PageHeader
+    eyebrow="Built for curiosity"
+    title="Space is closer than you think."
+    description="An independent project exploring Europe’s journey into space through science, technology and open data."
+  />
+  <div class="prose">
+    <h2>One place to start exploring.</h2>
+    <p>
+      Europe in Space brings together missions, spacecraft, observatories and
+      the science behind them. The aim is to make Europe’s presence in space
+      easier to explore and understand.
+    </p>
+    <h2>Our first orbit.</h2>
+    <p>
+      The first milestone will connect a curated European mission with a
+      prediction of a spacecraft’s orbit. The initial design system gives that
+      experience a shared visual language, from desktop to mobile.
+    </p>
+    <p>
+      Predictions will be calculated from public orbital elements, rather than
+      continuous live spacecraft telemetry. They must not be used for
+      operational or safety-critical purposes.
+    </p>
+    <h2>Independent by design.</h2>
+    <p>
+      This is a personal, non-commercial project. It is not affiliated with or
+      endorsed by ESA, the European Union, EUMETSAT, ESO or other space
+      organizations.
+    </p>
+    <div class="row" style="margin-top:30px">
+      <Button href="/missions/" icon="arrow-right">
+        Explore missions
+      </Button>
+      <Button href="/data-sources/" variant="secondary">
+        Our data sources
+      </Button>
+    </div>
+  </div>
 </BaseLayout>

@@ -1,9 +1,43 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Button from "../components/ui/Button.astro";
+import FeatureCards from "../components/sections/FeatureCards.astro";
 ---
-<BaseLayout title="Explore Europe's journey into space">
-  <p class="mb-5 text-sm font-semibold uppercase tracking-widest text-sky-300">An independent exploration project</p>
-  <h1 class="max-w-3xl text-4xl font-bold leading-tight sm:text-6xl">Explore Europe’s journey into space.</h1>
-  <p class="mt-6 max-w-2xl text-lg leading-relaxed text-slate-300">Discover the missions, spacecraft and science shaping Europe’s presence beyond Earth. Our first interactive experience is in development.</p>
-  <a class="mt-8 inline-block rounded bg-sky-300 px-5 py-3 font-semibold text-slate-950" href="/about/">About the project</a>
+
+<BaseLayout title="Explore Europe’s journey into space" home>
+  <div class="home-art" aria-hidden="true">
+    <img
+      src="/images/europe-night.webp"
+      width="1672"
+      height="941"
+      alt=""
+      fetchpriority="high"
+    />
+  </div>
+  <section class="hero shell" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow">Europe in Space</p>
+      <h1 id="hero-title">
+        Explore Europe’s
+        <br />
+        journey into space.
+      </h1>
+      <p class="hero-description">
+        Discover missions, spacecraft and the science
+        <br class="desktop-break" /> shaping our understanding of Earth and
+        beyond.
+      </p>
+      <div class="hero-actions">
+        <Button href="/missions/" icon="arrow-right">
+          Explore missions
+        </Button>
+        <Button href="/satellites/" variant="secondary" icon="planet">
+          Track satellites
+        </Button>
+      </div>
+    </div>
+  </section>
+  <section class="shell home-features" aria-label="Start exploring">
+    <FeatureCards />
+  </section>
 </BaseLayout>

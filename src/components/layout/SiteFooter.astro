@@ -1,0 +1,27 @@
+---
+import Icon from "../ui/Icon.astro";
+import { repository } from "../../data/site";
+---
+
+<footer class="site-footer shell">
+  <div class="footer-note">
+    <Icon name="globe-hemisphere-west" size={30} />
+    <p>
+      <span>An independent, non-commercial project.</span> Exploring Europe’s
+      activities in space using open, publicly available data.
+    </p>
+  </div>
+  <a href={repository}>
+    <Icon name="github-logo" size={22} /> Open source on GitHub{" "}
+    <Icon name="arrow-up-right" size={16} />
+  </a>
+  <div class="footer-meta">
+    <span>
+      Built for curiosity. Not affiliated with ESA or the European Union.
+    </span>
+    <div>
+      <a href="/data-sources/">Data sources</a>
+      <a href="/design-system/">Design system</a>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,156 @@
+---
+import Icon from "../ui/Icon.astro";
+import { sections, repository } from "../../data/site";
+const path = Astro.url.pathname;
+---
+
+<header class="site-header shell">
+  <a class="brand" href="/" aria-label="Europe in Space home">
+    <Icon name="planet" size={45} />
+    <span>Europe in Space</span>
+  </a>
+  <nav class="desktop-nav" aria-label="Main navigation">
+    <details class="nav-dropdown">
+      <summary>
+        Explore <Icon name="caret-down" size={16} />
+      </summary>
+      <div class="dropdown-panel">
+        {sections.map((s) => (
+          <a href={`/${s.slug}/`}>
+            <Icon name={s.icon} />
+            <span>
+              <strong>{s.title}</strong>
+              <small>{s.description}</small>
+            </span>
+          </a>
+        ))}
+      </div>
+    </details>
+    <a
+      href="/missions/"
+      aria-current={path.startsWith("/missions") ? "page" : undefined}
+    >
+      Missions
+    </a>
+    <a
+      href="/satellites/"
+      aria-current={path.startsWith("/satellites") ? "page" : undefined}
+    >
+      Satellites
+    </a>
+    <details class="nav-dropdown">
+      <summary>
+        About <Icon name="caret-down" size={16} />
+      </summary>
+      <div class="dropdown-panel dropdown-panel--small">
+        <a href="/about/">The project</a>
+        <a href="/data-sources/">Data sources</a>
+        <a href="/design-system/">Design system</a>
+      </div>
+    </details>
+  </nav>
+  <div class="header-actions">
+    <button
+      type="button"
+      class="icon-button"
+      data-open-search
+      aria-label="Search Europe in Space"
+    >
+      <Icon name="magnifying-glass" size={25} />
+    </button>
+    <a class="source-link" href={repository}>
+      <Icon name="github-logo" size={21} />
+      Open source
+    </a>
+    <button
+      type="button"
+      class="icon-button menu-toggle"
+      aria-label="Open navigation"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+    >
+      <Icon name="list" size={26} />
+    </button>
+  </div>
+  <nav
+    id="mobile-menu"
+    class="mobile-menu"
+    aria-label="Mobile navigation"
+    hidden
+  >
+    {sections.map((s) => (
+      <a
+        href={`/${s.slug}/`}
+        aria-current={path.startsWith(`/${s.slug}`) ? "page" : undefined}
+      >
+        <Icon name={s.icon} />
+        {s.title}
+      </a>
+    ))}
+    <a href="/about/">About the project</a>
+    <a href="/data-sources/">Data sources</a>
+    <a href="/design-system/">Design system</a>
+    <a href={repository}>Open source on GitHub</a>
+  </nav>
+</header>
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>(".menu-toggle");
+  const menu = document.getElementById("mobile-menu");
+  const closeMenu = () => {
+    if (toggle && menu) {
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Open navigation");
+      menu.hidden = true;
+    }
+  };
+  toggle?.addEventListener("click", () => {
+    if (!menu) return;
+    const open = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute(
+      "aria-label",
+      open ? "Close navigation" : "Open navigation",
+    );
+    menu.hidden = !open;
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const wasOpen = toggle?.getAttribute("aria-expanded") === "true";
+      closeMenu();
+      if (wasOpen) toggle?.focus();
+      document
+        .querySelectorAll<HTMLDetailsElement>(".nav-dropdown[open]")
+        .forEach((d) => {
+          d.open = false;
+          d.querySelector("summary")?.focus();
+        });
+    }
+  });
+  document.addEventListener("click", (e) => {
+    document
+      .querySelectorAll<HTMLDetailsElement>(".nav-dropdown[open]")
+      .forEach((d) => {
+        if (!d.contains(e.target as Node)) d.open = false;
+      });
+    if (
+      menu &&
+      toggle &&
+      !menu.contains(e.target as Node) &&
+      !toggle.contains(e.target as Node)
+    )
+      closeMenu();
+  });
+  document.querySelectorAll<HTMLDetailsElement>(".nav-dropdown").forEach((d) =>
+    d.addEventListener("toggle", () => {
+      if (d.open)
+        document
+          .querySelectorAll<HTMLDetailsElement>(".nav-dropdown")
+          .forEach((other) => {
+            if (other !== d) other.open = false;
+          });
+    }),
+  );
+  matchMedia("(min-width: 900px)").addEventListener("change", (e) => {
+    if (e.matches) closeMenu();
+  });
+</script>

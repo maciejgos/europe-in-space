@@ -1,0 +1,16 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/ui/PageHeader.astro";
+import Button from "../components/ui/Button.astro";
+---
+
+<BaseLayout title="Page not found">
+  <PageHeader
+    eyebrow="A little off course · 404"
+    title="Let’s find your next orbit."
+    description="The page you’re looking for isn’t here. There’s still plenty to explore."
+  />
+  <Button href="/" icon="arrow-right">
+    Back to Earth
+  </Button>
+</BaseLayout>
