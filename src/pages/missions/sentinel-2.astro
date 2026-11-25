@@ -1,157 +1,130 @@
 ---
+import { getEntry, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import PageHeader from "../../components/ui/PageHeader.astro";
-import Badge from "../../components/ui/Badge.astro";
-import Button from "../../components/ui/Button.astro";
 import Icon from "../../components/ui/Icon.astro";
+
+const mission = await getEntry("missions", "sentinel-2");
+if (!mission) throw new Error("The missions collection is missing the required Sentinel-2 entry.");
+
+const { title, category, summary, hero, spacecraft, sources, verifiedOn } = mission.data;
+for (const id of ["sentinel-2a", "sentinel-2b", "sentinel-2c"]) {
+  if (!spacecraft.some((craft) => craft.id === id)) {
+    throw new Error(`Sentinel-2 is missing the required spacecraft summary for ${id}.`);
+  }
+}
+const { Content } = await render(mission);
+const sourceTitles = new Map(sources.map(({ id, title }) => [id, title]));
+const dateFormat = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" });
+const formatDate = (date: string) => dateFormat.format(new Date(date));
 ---
 
-<BaseLayout title="Sentinel-2 · layout preview">
+<BaseLayout title={title} description={summary}>
   <a href="/missions/" class="back-link">
     <Icon name="arrow-left" size={18} /> Missions
   </a>
-  <section class="detail-banner">
-    <img src="/images/sentinel-feature.webp" width="1942" height="809" alt="" />
-    <PageHeader
-      eyebrow="Earth observation"
-      title="Sentinel-2"
-      description="A closer look at our changing planet."
-    >
-      <div style="margin-top:24px">
-        <Badge tone="accent">Mission layout preview</Badge>
-      </div>
-    </PageHeader>
-  </section>
-  <div class="detail-tabs" role="tablist" aria-label="Mission sections">
-    {["Overview", "Spacecraft", "Orbit", "Sources"].map((n, i) => (
-      <button
-        class="chip"
-        type="button"
-        role="tab"
-        id={`tab-${n.toLowerCase()}`}
-        aria-controls={`panel-${n.toLowerCase()}`}
-        aria-selected={i === 0}
-        aria-pressed={i === 0}
-        tabindex={i === 0 ? 0 : -1}
-      >
-        {n}
-      </button>
-    ))}
+  <figure>
+    <div class="detail-banner">
+      <img src={hero.src} width={hero.width} height={hero.height} alt="" />
+      <PageHeader eyebrow={category} title={title} description={summary} />
+    </div>
+    <figcaption class="hero-credit">
+      <strong>{hero.label}.</strong> {hero.attribution} {hero.usageTerms}
+    </figcaption>
+  </figure>
+  <nav class="detail-tabs" aria-label="Mission sections">
+    <a class="chip" href="#overview">Overview</a>
+    <a class="chip" href="#spacecraft">Spacecraft</a>
+    <a class="chip" href="#sources">Sources</a>
+  </nav>
+  <div class="mission-sections">
+    <section class="panel mission-section" id="overview" aria-labelledby="overview-title" tabindex="-1">
+      <h2 id="overview-title" class="section-title">Overview</h2>
+      <div class="mission-prose" data-mission-overview><Content /></div>
+    </section>
+    <section class="panel mission-section" id="spacecraft" aria-labelledby="spacecraft-title" tabindex="-1">
+      <h2 id="spacecraft-title" class="section-title">Spacecraft</h2>
+      {spacecraft.map((craft) => (
+        <article id={craft.id}>
+          <h3>{craft.name}</h3>
+          {craft.status && (
+            <p data-spacecraft-status>
+              {craft.status.label} as of <time datetime={craft.status.asOf}>{formatDate(craft.status.asOf)}</time>.{" "}
+              <a href={`#source-${craft.status.sourceId}`}>{sourceTitles.get(craft.status.sourceId)}</a>
+            </p>
+          )}
+          {craft.statements.map(({ text, sourceIds }) => (
+            <p data-spacecraft-statement>
+              {text}{" "}
+              {sourceIds.map((id, index) => (
+                <>{index > 0 && " · "}<a href={`#source-${id}`}>{sourceTitles.get(id)}</a></>
+              ))}
+            </p>
+          ))}
+        </article>
+      ))}
+    </section>
+    <section class="panel mission-section" id="sources" aria-labelledby="sources-title" tabindex="-1">
+      <h2 id="sources-title" class="section-title">Sources</h2>
+      <p>Editorial verification on <time datetime={verifiedOn}>{formatDate(verifiedOn)}</time>.</p>
+      {sources.map((source) => (
+        <article id={`source-${source.id}`} data-source-entry tabindex="-1">
+          <h3><a href={source.url}>{source.title}</a></h3>
+          {source.id === "esa-overview" && <p>Official mission page</p>}
+          <p>{source.publisher}</p>
+          {source.publicationDate && <p>Published <time datetime={source.publicationDate}>{formatDate(source.publicationDate)}</time></p>}
+          {source.effectiveDate && <p>Effective <time datetime={source.effectiveDate}>{formatDate(source.effectiveDate)}</time></p>}
+          {source.usageTerms && <p><a href={source.usageTerms.url}>{source.usageTerms.label}</a></p>}
+        </article>
+      ))}
+    </section>
   </div>
-  <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
-    <div class="detail-grid">
-      <div class="panel">
-        <h2>Seeing Earth differently.</h2>
-        <p>
-          This sample page demonstrates the mission layout: a clear
-          introduction, connected spacecraft, orbit information and original
-          sources.
-        </p>
-        <p style="margin-top:16px">
-          The first mission’s full, verified scientific content will be added in
-          the next milestone.
-        </p>
-        <div class="row">
-          <Button href="/satellites/" variant="secondary" icon="planet">
-            Explore orbits
-          </Button>
-        </div>
-      </div>
-      <div class="panel">
-        <h2>Part of a bigger picture.</h2>
-        <p>
-          Mission information will connect to the data and organizations behind
-          it. Every published dataset will keep its source and freshness
-          visible.
-        </p>
-        <div class="row">
-          <Badge>Curated content</Badge>
-          <Badge>Sources first</Badge>
-        </div>
-      </div>
-    </div>
-  </section>
-  <section
-    role="tabpanel"
-    id="panel-spacecraft"
-    aria-labelledby="tab-spacecraft"
-    hidden
-  >
-    <div class="panel">
-      <h2 class="section-title">The spacecraft behind the mission.</h2>
-      <p class="section-description">
-        Spacecraft profiles and their connection to the mission are planned for
-        First Orbit. This panel demonstrates the shared detail layout.
-      </p>
-    </div>
-  </section>
-  <section role="tabpanel" id="panel-orbit" aria-labelledby="tab-orbit" hidden>
-    <div class="panel">
-      <h2 class="section-title">An orbit to explore.</h2>
-      <p class="section-description">
-        Predicted positions will be calculated from public orbital elements. No
-        orbital data is connected in this design preview.
-      </p>
-      <div style="margin-top:22px">
-        <Button href="/satellites/" variant="secondary">
-          About the tracker
-        </Button>
-      </div>
-    </div>
-  </section>
-  <section
-    role="tabpanel"
-    id="panel-sources"
-    aria-labelledby="tab-sources"
-    hidden
-  >
-    <div class="panel">
-      <h2 class="section-title">Go to the source.</h2>
-      <p class="section-description">
-        Learn more from{" "}
-        <a
-          class="text-link"
-          href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-2"
-        >
-          ESA’s Sentinel-2 overview
-        </a>
-        . Page artwork is an AI-generated illustration, not satellite imagery.
-      </p>
-      <div style="margin-top:22px">
-        <Button href="/data-sources/" variant="secondary">
-          Our approach to data
-        </Button>
-      </div>
-    </div>
-  </section>
 </BaseLayout>
-<script>
-  const tabs = [...document.querySelectorAll<HTMLButtonElement>("[role=tab]")];
-  const activate = (tab: HTMLButtonElement) => {
-    tabs.forEach((t) => {
-      const active = t === tab;
-      t.setAttribute("aria-selected", String(active));
-      t.setAttribute("aria-pressed", String(active));
-      t.tabIndex = active ? 0 : -1;
-      const panel = document.getElementById(
-        t.getAttribute("aria-controls") || "",
-      );
-      if (panel) panel.hidden = !active;
-    });
-  };
-  tabs.forEach((tab, i) => {
-    tab.addEventListener("click", () => activate(tab));
-    tab.addEventListener("keydown", (e) => {
-      let next = i;
-      if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
-      else if (e.key === "ArrowLeft")
-        next = (i - 1 + tabs.length) % tabs.length;
-      else if (e.key === "Home") next = 0;
-      else if (e.key === "End") next = tabs.length - 1;
-      else return;
-      e.preventDefault();
-      activate(tabs[next]);
-      tabs[next].focus();
-    });
-  });
-</script>
+
+<style>
+  .detail-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgb(5 13 23 / 96%), rgb(5 13 23 / 65%) 45%, transparent 75%);
+  }
+  .hero-credit {
+    margin-top: 10px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+  .detail-tabs {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  .mission-sections {
+    display: grid;
+    gap: 24px;
+  }
+  .mission-section :global(p) {
+    margin: 12px 0 0;
+    max-width: 70ch;
+    color: var(--text-muted);
+  }
+  .mission-section article {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .mission-section article p {
+    margin-top: 8px;
+  }
+  .mission-section :global(a) {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .mission-section, .mission-section article {
+    scroll-margin-top: 7rem;
+  }
+  @media (max-width: 640px) {
+    .detail-banner::before {
+      background: linear-gradient(180deg, rgb(5 13 23 / 96%), rgb(5 13 23 / 72%) 40%, transparent 80%);
+    }
+  }
+</style>

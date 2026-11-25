@@ -1,3 +1,5 @@
+export const missionCategories = ["Earth observation", "Science", "Exploration", "Technology"] as const;
+
 export const repository = "https://github.com/maciejgos/europe-in-space";
 export const sections = [
   {
@@ -53,12 +55,6 @@ export const searchEntries = [
     href: `/${s.slug}/`,
     icon: s.icon,
   })),
-  {
-    title: "Sentinel-2",
-    description: "Earth observation · mission layout preview",
-    href: "/missions/sentinel-2/",
-    icon: "rocket-launch",
-  },
   {
     title: "About the project",
     description: "Independent, open and built for curiosity.",
