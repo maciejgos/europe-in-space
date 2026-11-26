@@ -1,6 +1,19 @@
 ---
+import { getEntry } from "astro:content";
 import Icon from "../ui/Icon.astro";
 import { searchEntries } from "../../data/site";
+
+const mission = await getEntry("missions", "sentinel-2");
+const missions = mission ? [mission] : [];
+const entries = [
+  ...searchEntries,
+  ...missions.map(({ id, data }) => ({
+    title: data.title,
+    description: data.summary,
+    href: `/missions/${id}/`,
+    icon: "rocket-launch",
+  })),
+];
 ---
 
 <dialog id="site-search" class="search-dialog" aria-labelledby="search-title">
@@ -28,7 +41,7 @@ import { searchEntries } from "../../data/site";
     Explore Europe in Space
   </p>
   <div class="search-results">
-    {searchEntries.map((e) => (
+    {entries.map((e) => (
       <a
         href={e.href}
         data-search-entry

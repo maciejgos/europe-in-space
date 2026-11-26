@@ -1,28 +1,33 @@
 ---
+import { getEntry } from "astro:content";
 import Icon from "../ui/Icon.astro";
+
+const mission = await getEntry("missions", "sentinel-2");
 ---
 
 <div class="feature-grid">
-  <a href="/missions/sentinel-2/" class="feature-card feature-card--mission">
-    <img
-      src="/images/sentinel-feature.webp"
-      width="1942"
-      height="809"
-      alt=""
-      loading="eager"
-    />
-    <div class="feature-content">
-      <p class="eyebrow">Featured mission</p>
-      <h2>Sentinel-2</h2>
-      <p class="feature-description">Earth observation</p>
-      <span class="card-link">
-        <span class="round-icon">
-          <Icon name="arrow-right" />
-        </span>{" "}
-        View mission
-      </span>
-    </div>
-  </a>
+  {mission && (
+    <a href={`/missions/${mission.id}/`} class="feature-card feature-card--mission">
+      <img
+        src={mission.data.hero.src}
+        width={mission.data.hero.width}
+        height={mission.data.hero.height}
+        alt=""
+        loading="eager"
+      />
+      <div class="feature-content">
+        <p class="eyebrow">Featured mission</p>
+        <h2>{mission.data.title}</h2>
+        <p class="feature-description">{mission.data.category}</p>
+        <span class="card-link">
+          <span class="round-icon">
+            <Icon name="arrow-right" />
+          </span>{" "}
+          View mission
+        </span>
+      </div>
+    </a>
+  )}
   <a href="/satellites/" class="feature-card feature-card--orbits">
     <div class="feature-content">
       <p class="eyebrow">Explore orbits</p>

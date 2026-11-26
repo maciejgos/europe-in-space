@@ -1,8 +1,13 @@
 ---
+import { getEntry } from "astro:content";
+import { missionCategories } from "../../data/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import PageHeader from "../../components/ui/PageHeader.astro";
 import Badge from "../../components/ui/Badge.astro";
 import Icon from "../../components/ui/Icon.astro";
+
+const mission = await getEntry("missions", "sentinel-2");
+const missions = mission ? [mission] : [];
 ---
 
 <BaseLayout title="European space missions">
@@ -13,13 +18,7 @@ import Icon from "../../components/ui/Icon.astro";
   />
   <div class="catalog-tools">
     <div class="chips" aria-label="Filter missions">
-      {[
-        "All missions",
-        "Earth observation",
-        "Science",
-        "Exploration",
-        "Technology",
-      ].map((n, i) => (
+      {["All missions", ...missionCategories].map((n, i) => (
         <button
           type="button"
           class="chip"
@@ -41,38 +40,36 @@ import Icon from "../../components/ui/Icon.astro";
     </label>
   </div>
   <div class="mission-grid">
-    <a
-      href="/missions/sentinel-2/"
-      class="panel mission-card"
-      data-mission-card
-    >
-      <img
-        src="/images/sentinel-feature.webp"
-        width="1942"
-        height="809"
-        alt="Illustration of an Earth observation satellite above Earth"
-      />
-      <div class="mission-card-copy">
-        <h2>Sentinel-2</h2>
-        <p>A closer look at our changing planet.</p>
-        <div class="mission-card-foot">
-          <Badge tone="accent">Earth observation</Badge>
-          <Icon name="arrow-right" />
+    {missions.map(({ id, data: { title, summary, category, hero } }) => (
+      <a
+        href={`/missions/${id}/`}
+        class="panel mission-card"
+        data-mission-card
+        data-category={category}
+        data-search-text={`${title} ${category} ${summary}`.toLowerCase()}
+      >
+        <img src={hero.src} width={hero.width} height={hero.height} alt="" />
+        <div class="mission-card-copy">
+          <h2>{title}</h2>
+          <p>{summary}</p>
+          <div class="mission-card-foot">
+            <Badge tone="accent">{category}</Badge>
+            <Icon name="arrow-right" />
+          </div>
         </div>
-      </div>
-    </a>
+      </a>
+    ))}
   </div>
   <div class="panel catalog-empty" hidden>
     <Icon name="compass" size={36} />
-    <h2 style="margin-top:18px">More to discover, soon.</h2>
-    <p>No missions match this selection in the layout preview.</p>
+    <h2 style="margin-top:18px">No matching missions</h2>
+    <p>Try a different category or search term.</p>
     <button type="button" class="button button--secondary" id="reset-missions">
       Show all missions
     </button>
   </div>
   <p class="catalog-note" role="status" id="mission-count">
-    1 sample mission · Design preview. The full catalog is coming in a later
-    milestone.
+    {missions.length} {missions.length === 1 ? "mission" : "missions"}
   </p>
 </BaseLayout>
 <script>
@@ -81,18 +78,19 @@ import Icon from "../../components/ui/Icon.astro";
   const filters = [
     ...document.querySelectorAll<HTMLButtonElement>("[data-mission-filter]"),
   ];
+  const cards = [...document.querySelectorAll<HTMLElement>("[data-mission-card]")];
+  const empty = document.querySelector<HTMLElement>(".catalog-empty");
+  const count = document.getElementById("mission-count");
   const update = () => {
     const query = input?.value.trim().toLowerCase() || "";
-    const visible =
-      (selected === "All missions" || selected === "Earth observation") &&
-      "sentinel-2 earth observation copernicus".includes(query);
-    const card = document.querySelector<HTMLElement>("[data-mission-card]");
-    const empty = document.querySelector<HTMLElement>(".catalog-empty");
-    const count = document.getElementById("mission-count");
-    if (card) card.hidden = !visible;
-    if (empty) empty.hidden = visible;
-    if (count)
-      count.textContent = `${visible ? "1 sample mission" : "0 missions"} · Design preview. The full catalog is coming in a later milestone.`;
+    let visible = 0;
+    for (const card of cards) {
+      const matchesCategory = selected === "All missions" || card.dataset.category === selected;
+      card.hidden = !matchesCategory || !card.dataset.searchText?.includes(query);
+      if (!card.hidden) visible++;
+    }
+    if (empty) empty.hidden = visible > 0;
+    if (count) count.textContent = `${visible} ${visible === 1 ? "mission" : "missions"}`;
     filters.forEach((b) =>
       b.setAttribute(
         "aria-pressed",
@@ -111,5 +109,6 @@ import Icon from "../../components/ui/Icon.astro";
     selected = "All missions";
     if (input) input.value = "";
     update();
+    filters[0]?.focus();
   });
 </script>

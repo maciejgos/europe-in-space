@@ -117,7 +117,7 @@ The first milestone focuses on demonstrating the platform's core experience.
 - [x] Set up the Astro application and Cloudflare Worker configuration.
 - [x] Provision Cloudflare resources and deploy the application.
 - [x] Create the initial design system and responsive layout.
-- [ ] Implement the first European mission detail page.
+- [x] Implement the first European mission detail page.
 - [ ] Integrate CelesTrak orbital data.
 - [ ] Implement browser-based orbital calculations.
 - [ ] Build an interactive 3D Earth visualization.
