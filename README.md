@@ -195,6 +195,14 @@ Other checks are available with `pnpm check`, `pnpm test`, `pnpm build`, and `pn
 
 For a local preview of the Worker and built static assets, run `pnpm build` followed by `pnpm exec wrangler dev`. The Worker reserves `/api/*`, which currently returns 404. D1, scheduled ingestion, orbital calculations, and the tracker have not yet been implemented; deployment requires Cloudflare configuration and provisioning.
 
+### Cloudflare deployments
+
+Cloudflare Workers Builds deploys this repository. GitHub Actions runs validation separately.
+
+In the `europe-in-space` Worker’s **Settings → Build**, connect `maciejgos/europe-in-space`, turn off **Disable builds**, and set the production branch to `main`. Use the repository root and set the build command to `pnpm build`, the production deploy command to `pnpm exec wrangler deploy`, and the Preview command to `pnpm exec wrangler preview`. Enable **Preview Builds** in Branch control and enable a Preview hostname under **Domains & Routes**. Cloudflare creates previews for non-production branch pushes and links them from associated pull requests.
+
+If the Worker still uses the legacy preview setup, use the **Set up Worker Previews** option before configuring the Preview command. See [Cloudflare build branches](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/).
+
 The application separates portable domain logic, data source integrations, and infrastructure-specific implementations as described in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## 🤝 Contributing
