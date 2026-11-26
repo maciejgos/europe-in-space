@@ -2,6 +2,7 @@
 import { getEntry, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import PageHeader from "../../components/ui/PageHeader.astro";
+import Badge from "../../components/ui/Badge.astro";
 import Icon from "../../components/ui/Icon.astro";
 
 const mission = await getEntry("missions", "sentinel-2");
@@ -23,7 +24,7 @@ const formatDate = (date: string) => dateFormat.format(new Date(date));
   <a href="/missions/" class="back-link">
     <Icon name="arrow-left" size={18} /> Missions
   </a>
-  <figure>
+  <figure class="detail-figure">
     <div class="detail-banner">
       <img src={hero.src} width={hero.width} height={hero.height} alt="" />
       <PageHeader eyebrow={category} title={title} description={summary} />
@@ -33,98 +34,276 @@ const formatDate = (date: string) => dateFormat.format(new Date(date));
     </figcaption>
   </figure>
   <nav class="detail-tabs" aria-label="Mission sections">
-    <a class="chip" href="#overview">Overview</a>
-    <a class="chip" href="#spacecraft">Spacecraft</a>
-    <a class="chip" href="#sources">Sources</a>
+    <a class="chip" href="#overview" data-section-tab="overview" aria-current="true">Overview</a>
+    <a class="chip" href="#spacecraft" data-section-tab="spacecraft">Spacecraft</a>
+    <a class="chip" href="#sources" data-section-tab="sources">Sources</a>
   </nav>
   <div class="mission-sections">
     <section class="panel mission-section" id="overview" aria-labelledby="overview-title" tabindex="-1">
-      <h2 id="overview-title" class="section-title">Overview</h2>
-      <div class="mission-prose" data-mission-overview><Content /></div>
+      <header class="mission-section-head">
+        <p class="eyebrow">Mission profile</p>
+        <h2 id="overview-title" class="section-title">Overview</h2>
+      </header>
+      <div class="mission-prose prose" data-mission-overview><Content /></div>
     </section>
     <section class="panel mission-section" id="spacecraft" aria-labelledby="spacecraft-title" tabindex="-1">
-      <h2 id="spacecraft-title" class="section-title">Spacecraft</h2>
-      {spacecraft.map((craft) => (
-        <article id={craft.id}>
-          <h3>{craft.name}</h3>
-          {craft.status && (
-            <p data-spacecraft-status>
-              {craft.status.label} as of <time datetime={craft.status.asOf}>{formatDate(craft.status.asOf)}</time>.{" "}
-              <a href={`#source-${craft.status.sourceId}`}>{sourceTitles.get(craft.status.sourceId)}</a>
-            </p>
-          )}
-          {craft.statements.map(({ text, sourceIds }) => (
-            <p data-spacecraft-statement>
-              {text}{" "}
-              {sourceIds.map((id, index) => (
-                <>{index > 0 && " · "}<a href={`#source-${id}`}>{sourceTitles.get(id)}</a></>
-              ))}
-            </p>
-          ))}
-        </article>
-      ))}
+      <header class="mission-section-head">
+        <p class="eyebrow">Constellation units</p>
+        <h2 id="spacecraft-title" class="section-title">Spacecraft</h2>
+      </header>
+      <div class="spacecraft-grid">
+        {spacecraft.map((craft, index) => (
+          <article id={craft.id} class="subpanel">
+            <div class="subpanel-head">
+              <span class="unit-index">0{index + 1}</span>
+              <h3>{craft.name}</h3>
+            </div>
+            {craft.status && (
+              <p data-spacecraft-status>
+                {craft.status.label} as of <time datetime={craft.status.asOf}>{formatDate(craft.status.asOf)}</time>.{" "}
+                <a href={`#source-${craft.status.sourceId}`}>{sourceTitles.get(craft.status.sourceId)}</a>
+              </p>
+            )}
+            {craft.statements.map(({ text, sourceIds }) => (
+              <p data-spacecraft-statement>
+                {text}{" "}
+                <span class="citation-list">
+                  {sourceIds.map((id, idx) => (
+                    <>{idx > 0 && " · "}<a href={`#source-${id}`}>{sourceTitles.get(id)}</a></>
+                  ))}
+                </span>
+              </p>
+            ))}
+          </article>
+        ))}
+      </div>
     </section>
     <section class="panel mission-section" id="sources" aria-labelledby="sources-title" tabindex="-1">
-      <h2 id="sources-title" class="section-title">Sources</h2>
-      <p>Editorial verification on <time datetime={verifiedOn}>{formatDate(verifiedOn)}</time>.</p>
-      {sources.map((source) => (
-        <article id={`source-${source.id}`} data-source-entry tabindex="-1">
-          <h3><a href={source.url}>{source.title}</a></h3>
-          {source.id === "esa-overview" && <p>Official mission page</p>}
-          <p>{source.publisher}</p>
-          {source.publicationDate && <p>Published <time datetime={source.publicationDate}>{formatDate(source.publicationDate)}</time></p>}
-          {source.effectiveDate && <p>Effective <time datetime={source.effectiveDate}>{formatDate(source.effectiveDate)}</time></p>}
-          {source.usageTerms && <p><a href={source.usageTerms.url}>{source.usageTerms.label}</a></p>}
-        </article>
-      ))}
+      <header class="mission-section-head sources-head">
+        <div>
+          <p class="eyebrow">Provenance</p>
+          <h2 id="sources-title" class="section-title">Sources</h2>
+        </div>
+        <p class="verified-stamp">
+          Editorial verification on <time datetime={verifiedOn}>{formatDate(verifiedOn)}</time>.
+        </p>
+      </header>
+      <div class="sources-grid">
+        {sources.map((source) => (
+          <article id={`source-${source.id}`} data-source-entry class="subpanel source-card" tabindex="-1">
+            <div class="source-card-top">
+              <span class="source-publisher">{source.publisher}</span>
+              {source.id === "esa-overview" && <Badge tone="accent">Official mission page</Badge>}
+            </div>
+            <h3>
+              <a href={source.url} class="source-entry-link">
+                <span>{source.title}</span>
+                <Icon name="arrow-up-right" size={17} />
+              </a>
+            </h3>
+            <div class="source-meta">
+              {source.publicationDate && (
+                <p>Published <time datetime={source.publicationDate}>{formatDate(source.publicationDate)}</time></p>
+              )}
+              {source.effectiveDate && (
+                <p>Effective <time datetime={source.effectiveDate}>{formatDate(source.effectiveDate)}</time></p>
+              )}
+              {source.usageTerms && (
+                <p><a href={source.usageTerms.url}>{source.usageTerms.label}</a></p>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
   </div>
 </BaseLayout>
 
+<script>
+  const tabs = [...document.querySelectorAll<HTMLAnchorElement>("[data-section-tab]")];
+  const setActive = (id: string) => {
+    tabs.forEach((tab) => {
+      const active = tab.dataset.sectionTab === id;
+      tab.setAttribute("aria-current", active ? "true" : "false");
+    });
+  };
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      if (tab.dataset.sectionTab) setActive(tab.dataset.sectionTab);
+    });
+  });
+  if (location.hash) {
+    const id = location.hash.slice(1);
+    if (tabs.some((tab) => tab.dataset.sectionTab === id)) setActive(id);
+  }
+</script>
+
 <style>
+  .detail-figure {
+    margin: 0;
+  }
   .detail-banner::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: linear-gradient(90deg, rgb(5 13 23 / 96%), rgb(5 13 23 / 65%) 45%, transparent 75%);
+    background: linear-gradient(95deg, rgb(5 13 23 / 97%) 0%, rgb(5 13 23 / 82%) 46%, rgb(5 13 23 / 24%) 82%);
   }
   .hero-credit {
-    margin-top: 10px;
+    margin-top: 12px;
     color: var(--text-muted);
     font-size: 0.875rem;
+    line-height: 1.5;
   }
   .detail-tabs {
     flex-wrap: wrap;
     overflow: visible;
   }
+  .detail-tabs .chip[aria-current="true"] {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--background);
+  }
   .mission-sections {
     display: grid;
     gap: 24px;
   }
-  .mission-section :global(p) {
-    margin: 12px 0 0;
-    max-width: 70ch;
+  .mission-section-head {
+    margin-bottom: 18px;
+  }
+  .mission-section-head .eyebrow {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .sources-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .verified-stamp {
     color: var(--text-muted);
+    font-size: 13px;
   }
-  .mission-section article {
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
+  .mission-prose :global(p) {
+    margin: 14px 0 0;
+    max-width: 72ch;
+    color: var(--text-muted);
+    font-size: 16px;
   }
-  .mission-section article p {
-    margin-top: 8px;
+  .mission-prose :global(p:first-child) {
+    margin-top: 0;
   }
   .mission-section :global(a) {
+    color: var(--accent-hover);
     text-decoration: underline;
-    text-underline-offset: 0.2em;
+    text-underline-offset: 0.22em;
+    text-decoration-color: #86ccff55;
   }
-  .mission-section, .mission-section article {
-    scroll-margin-top: 7rem;
+  .mission-section :global(a:hover) {
+    text-decoration-color: var(--accent-hover);
+  }
+  .spacecraft-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .sources-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .subpanel {
+    background: #08121eb8;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .subpanel-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .unit-index {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent-hover);
+    background: #58b6fa1a;
+    border: 1px solid #58b6fa3b;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-variant-numeric: tabular-nums;
+  }
+  .subpanel h3 {
+    font-size: 19px;
+    font-weight: 550;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+  .subpanel p {
+    color: var(--text-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  .citation-list {
+    display: inline;
+    font-size: 13px;
+  }
+  .source-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .source-publisher {
+    font-size: 12px;
+    font-weight: 550;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .source-entry-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text) !important;
+    text-decoration: none !important;
+  }
+  .source-entry-link:hover {
+    color: var(--accent-hover) !important;
+  }
+  .source-meta {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #ffffff12;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+  }
+  .source-meta p {
+    font-size: 13px;
+  }
+  .mission-section,
+  .mission-section article {
+    scroll-margin-top: 6rem;
+  }
+  @media (max-width: 960px) {
+    .spacecraft-grid {
+      grid-template-columns: 1fr;
+    }
+    .sources-grid {
+      grid-template-columns: 1fr;
+    }
   }
   @media (max-width: 640px) {
     .detail-banner::before {
-      background: linear-gradient(180deg, rgb(5 13 23 / 96%), rgb(5 13 23 / 72%) 40%, transparent 80%);
+      background: linear-gradient(180deg, rgb(5 13 23 / 97%) 0%, rgb(5 13 23 / 82%) 46%, rgb(5 13 23 / 22%) 84%);
     }
   }
 </style>

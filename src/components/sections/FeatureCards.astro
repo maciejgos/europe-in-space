@@ -3,6 +3,7 @@ import { getEntry } from "astro:content";
 import Icon from "../ui/Icon.astro";
 
 const mission = await getEntry("missions", "sentinel-2");
+const agencies = ["ESA", "Copernicus", "EUMETSAT", "ESO"];
 ---
 
 <div class="feature-grid">
@@ -37,9 +38,7 @@ const mission = await getEntry("missions", "sentinel-2");
         spacecraft
       </h2>
       <p class="feature-description">
-        A new perspective on
-        <br />
-        our planet.
+        A new perspective on our planet.
       </p>
       <span class="card-link">
         <span class="round-icon">
@@ -48,28 +47,74 @@ const mission = await getEntry("missions", "sentinel-2");
         Explore orbits
       </span>
     </div>
-    <img
-      src="/images/orbit-globe.webp"
-      width="640"
-      height="640"
-      alt=""
-      class="orbit-art"
-      loading="lazy"
-    />
+    <div class="orbit-visual" aria-hidden="true">
+      <img
+        src="/images/orbit-globe.webp"
+        width="640"
+        height="640"
+        alt=""
+        class="orbit-art"
+        loading="lazy"
+      />
+      <svg class="orbit-rings" viewBox="0 0 220 220" fill="none">
+        <ellipse
+          cx="110"
+          cy="110"
+          rx="92"
+          ry="40"
+          transform="rotate(-24 110 110)"
+          stroke="#86ccff"
+          stroke-opacity="0.34"
+          stroke-width="1"
+          stroke-dasharray="3 4"
+        />
+        <ellipse
+          cx="110"
+          cy="110"
+          rx="86"
+          ry="52"
+          transform="rotate(34 110 110)"
+          stroke="#58b6fa"
+          stroke-opacity="0.45"
+          stroke-width="1"
+        />
+        <circle cx="176" cy="64" r="3" fill="#f4f6fa" />
+        <circle cx="176" cy="64" r="7" fill="#58b6fa" fill-opacity="0.28" />
+        <circle cx="48" cy="146" r="2.4" fill="#86ccff" />
+      </svg>
+    </div>
   </a>
   <a href="/data-sources/" class="feature-card feature-card--data">
+    <svg class="data-pattern" viewBox="0 0 280 240" fill="none" aria-hidden="true">
+      <circle cx="235" cy="40" r="88" stroke="#58b6fa" stroke-opacity="0.1" stroke-width="1" />
+      <circle cx="235" cy="40" r="56" stroke="#86ccff" stroke-opacity="0.12" stroke-width="1" stroke-dasharray="3 4" />
+      <circle cx="182" cy="18" r="2" fill="#86ccff" fill-opacity="0.45" />
+      <circle cx="256" cy="92" r="2.5" fill="#58b6fa" fill-opacity="0.55" />
+    </svg>
     <div class="feature-content">
-      <Icon name="stack" size={29} />
-      <h2>
-        Built on open
-        <br />
-        space data
-      </h2>
-      <p class="feature-description">
-        Publicly available data from ESA, EUMETSAT, Copernicus, ESO and more.
-      </p>
+      <div class="data-card-head">
+        <Icon name="stack" size={27} />
+        <div class="data-card-tags" aria-hidden="true">
+          {agencies.map((name) => (
+            <span>{name}</span>
+          ))}
+        </div>
+      </div>
+      <div class="data-card-body">
+        <h2>
+          Built on open
+          <br />
+          space data
+        </h2>
+        <p class="feature-description">
+          Publicly available data from ESA, EUMETSAT, Copernicus, ESO and more.
+        </p>
+      </div>
       <span class="card-link data-card-link">
-        Meet the sources <Icon name="arrow-up-right" size={18} />
+        <span class="round-icon round-icon--sm">
+          <Icon name="arrow-up-right" size={16} />
+        </span>
+        Meet the sources
       </span>
     </div>
   </a>

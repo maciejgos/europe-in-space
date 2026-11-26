@@ -1,12 +1,13 @@
 ---
 import Icon from "../ui/Icon.astro";
+import BrandMark from "../ui/BrandMark.astro";
 import { sections, repository } from "../../data/site";
 const path = Astro.url.pathname;
 ---
 
 <header class="site-header shell">
   <a class="brand" href="/" aria-label="Europe in Space home">
-    <Icon name="planet" size={45} />
+    <BrandMark size={40} />
     <span>Europe in Space</span>
   </a>
   <nav class="desktop-nav" aria-label="Main navigation">
