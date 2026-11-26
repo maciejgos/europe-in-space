@@ -2,34 +2,42 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHeader from "../components/ui/PageHeader.astro";
 import Badge from "../components/ui/Badge.astro";
+import Icon from "../components/ui/Icon.astro";
+
 const sources = [
   {
     name: "ESA",
+    icon: "rocket-launch",
     purpose: "Missions and spacecraft",
     url: "https://www.esa.int/",
   },
   {
     name: "CelesTrak",
+    icon: "planet",
     purpose: "Orbital elements for predicted spacecraft positions",
     url: "https://celestrak.org/",
   },
   {
     name: "Copernicus Data Space",
+    icon: "globe-hemisphere-west",
     purpose: "Earth observation data",
     url: "https://dataspace.copernicus.eu/",
   },
   {
     name: "EUMETSAT",
+    icon: "compass",
     purpose: "Meteorological satellite data",
     url: "https://www.eumetsat.int/",
   },
   {
     name: "ESO",
+    icon: "binoculars",
     purpose: "Observatories and astronomical imagery",
     url: "https://www.eso.org/",
   },
   {
     name: "ESA/Hubble",
+    icon: "image",
     purpose: "Space telescope imagery",
     url: "https://esahubble.org/",
   },
@@ -42,14 +50,22 @@ const sources = [
     title="Data sources"
     description="The story behind every orbit starts with a source. Here are the organizations we plan to build on."
   />
-  <div class="component-grid">
+  <div class="component-grid source-cards">
     {sources.map((s) => (
-      <a href={s.url} class="panel mission-card-copy">
-        <div class="row" style="justify-content:space-between">
-          <h2 class="section-title">{s.name}</h2>
+      <a href={s.url} class="panel source-item">
+        <div class="source-item-top">
+          <span class="source-icon">
+            <Icon name={s.icon} size={22} />
+          </span>
           <Badge>Planned integration</Badge>
         </div>
-        <p class="section-description">{s.purpose}</p>
+        <div class="source-item-body">
+          <h2 class="section-title">{s.name}</h2>
+          <p class="section-description">{s.purpose}</p>
+        </div>
+        <span class="source-item-link">
+          Visit source <Icon name="arrow-up-right" size={16} />
+        </span>
       </a>
     ))}
   </div>
@@ -79,3 +95,49 @@ const sources = [
     </p>
   </div>
 </BaseLayout>
+
+<style>
+  .source-item {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .source-item:hover {
+    border-color: #87caff9c;
+    transform: translateY(-2px);
+  }
+  .source-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .source-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: #58b6fa14;
+    border: 1px solid #58b6fa33;
+    color: var(--accent-hover);
+  }
+  .source-item-body h2 {
+    font-size: 22px;
+  }
+  .source-item-link {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--accent-hover);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .source-item:hover {
+      transform: none;
+    }
+  }
+</style>

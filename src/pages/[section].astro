@@ -11,6 +11,14 @@ export function getStaticPaths() {
 }
 const { section } = Astro.props;
 const satellite = section.slug === "satellites";
+const imageFocus =
+  section.slug === "satellites"
+    ? "75% 42%"
+    : section.slug === "observatories"
+      ? "28% 20%"
+      : section.slug === "imagery"
+        ? "65% 58%"
+        : "58% 48%";
 ---
 
 <BaseLayout title={section.title}>
@@ -40,13 +48,43 @@ const satellite = section.slug === "satellites";
         </Button>
       </div>
     </div>
-    <figure class="coming-image">
+    <figure class={`coming-image coming-image--${section.slug}`}>
       <img
         src="/images/europe-night.webp"
         width="1672"
         height="941"
+        style={`object-position: ${imageFocus}`}
         alt="Illustrative view of Europe’s city lights from space"
       />
+      {section.slug === "satellites" && (
+        <svg class="section-plate" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+          <ellipse cx="200" cy="200" rx="158" ry="68" transform="rotate(-24 200 200)" stroke="#86ccff" stroke-opacity="0.48" stroke-width="1.2" />
+          <ellipse cx="200" cy="200" rx="146" ry="86" transform="rotate(32 200 200)" stroke="#58b6fa" stroke-opacity="0.32" stroke-width="1" stroke-dasharray="4 5" />
+          <circle cx="312" cy="118" r="4.5" fill="#f4f6fa" />
+          <circle cx="312" cy="118" r="11" fill="#58b6fa" fill-opacity="0.28" />
+        </svg>
+      )}
+      {section.slug === "observatories" && (
+        <svg class="section-plate" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+          <circle cx="200" cy="186" r="118" stroke="#86ccff" stroke-opacity="0.28" stroke-width="1" stroke-dasharray="2 6" />
+          <circle cx="200" cy="186" r="64" stroke="#58b6fa" stroke-opacity="0.4" stroke-width="1" />
+          <path d="M200 50V96M200 276V322M64 186H110M290 186H336" stroke="#86ccff" stroke-opacity="0.45" stroke-width="1.2" />
+          <circle cx="200" cy="186" r="3" fill="#f4f6fa" />
+        </svg>
+      )}
+      {section.slug === "imagery" && (
+        <svg class="section-plate" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+          <path d="M56 96V56H96M304 56H344V96M56 264V304H96M304 304H344V264" stroke="#86ccff" stroke-opacity="0.55" stroke-width="1.5" />
+          <rect x="116" y="116" width="168" height="128" rx="8" stroke="#58b6fa" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="4 4" />
+        </svg>
+      )}
+      {section.slug === "earth" && (
+        <svg class="section-plate" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+          <circle cx="200" cy="190" r="134" stroke="#86ccff" stroke-opacity="0.28" stroke-width="1" />
+          <ellipse cx="200" cy="190" rx="64" ry="134" stroke="#58b6fa" stroke-opacity="0.24" stroke-width="1" />
+          <ellipse cx="200" cy="190" rx="134" ry="44" stroke="#86ccff" stroke-opacity="0.24" stroke-width="1" />
+        </svg>
+      )}
       <figcaption class="image-caption">
         Illustrative artwork ·{" "}
         {satellite
@@ -56,3 +94,33 @@ const satellite = section.slug === "satellites";
     </figure>
   </div>
 </BaseLayout>
+
+<style>
+  .coming-image {
+    position: relative;
+  }
+  .coming-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent 48%, #050d17cc 100%);
+  }
+  .coming-image--observatories img {
+    filter: brightness(0.76) saturate(1.1);
+  }
+  .coming-image--imagery img {
+    filter: contrast(1.06) saturate(1.12);
+  }
+  .section-plate {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .image-caption {
+    z-index: 2;
+  }
+</style>

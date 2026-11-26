@@ -4,14 +4,17 @@ import PageHeader from "../../components/ui/PageHeader.astro";
 import Button from "../../components/ui/Button.astro";
 import Badge from "../../components/ui/Badge.astro";
 import Icon from "../../components/ui/Icon.astro";
+import BrandMark from "../../components/ui/BrandMark.astro";
 import FeatureCards from "../../components/sections/FeatureCards.astro";
 const colors = [
   { name: "Deep space", token: "--background", hex: "#050D17" },
   { name: "Surface", token: "--surface", hex: "#0C1724" },
   { name: "Raised surface", token: "--surface-raised", hex: "#142231" },
   { name: "Orbit blue", token: "--accent", hex: "#58B6FA" },
+  { name: "Accent hover", token: "--accent-hover", hex: "#86CCFF" },
   { name: "Primary text", token: "--text", hex: "#F4F6FA" },
   { name: "Secondary text", token: "--text-muted", hex: "#AEBACB" },
+  { name: "Success", token: "--success", hex: "#9AE0B1" },
 ];
 ---
 
@@ -60,17 +63,17 @@ const colors = [
     </header>
     <div class="type-row">
       <span class="type-display">Made for discovery.</span>
-      <small>Display · 36–78px / 500</small>
+      <small>Display · 36–64px / 500</small>
     </div>
     <div class="type-row">
       <span class="type-heading">The next chapter in space.</span>
-      <small>Heading · 24–32px / 500</small>
+      <small>Heading · 28–32px / 500</small>
     </div>
     <div class="type-row">
       <span class="type-body">
         Discover missions, spacecraft and the science behind them.
       </span>
-      <small>Body · 16–24px / 400</small>
+      <small>Body · 16–17px / 400</small>
     </div>
     <div class="type-row">
       <span class="eyebrow">A different perspective</span>
@@ -147,8 +150,9 @@ const colors = [
         </p>
       </div>
       <div class="panel">
-        <h3>Icons</h3>
+        <h3>Brand mark & icons</h3>
         <div class="row">
+          <BrandMark size={34} />
           {[
             "planet",
             "rocket-launch",
@@ -165,8 +169,8 @@ const colors = [
           ))}
         </div>
         <p class="section-description">
-          Phosphor Regular. One family, consistent weight. Decorative icons stay
-          out of the reading order.
+          Custom orbital emblem paired with Phosphor Regular. Decorative icons
+          stay out of the reading order.
         </p>
       </div>
       <div class="panel">
