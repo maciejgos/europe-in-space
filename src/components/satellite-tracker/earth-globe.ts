@@ -63,6 +63,8 @@ class EarthGlobe extends HTMLElement {
         SkyAtmosphere,
       } = await import("./cesium-engine");
       if (signal.aborted) return;
+      const { connectAtlas } = await import("./atlas");
+      if (signal.aborted) return;
       Ion.defaultAccessToken = "";
       CreditDisplay.cesiumCredit = new Credit("CesiumJS", true);
 
@@ -102,6 +104,7 @@ class EarthGlobe extends HTMLElement {
       });
       this.#widget = widget;
       const { scene, camera } = widget;
+      const showAtlas = connectAtlas(this, widget, signal);
       scene.backgroundColor = Color.TRANSPARENT;
       // Use a fixed key light so the opening view is independent of time of day.
       const lightDirection = Cartesian3.fromDegrees(-62, 52, 0, ellipsoid);
@@ -153,6 +156,7 @@ class EarthGlobe extends HTMLElement {
         this.setAttribute("data-ready", "");
         staticMap.hidden = true;
         controls.hidden = false;
+        showAtlas();
         status.textContent = "";
       });
 

@@ -1,4 +1,5 @@
 export {
+  Cartesian2,
   Cartesian3,
   CesiumWidget,
   Color,
@@ -10,6 +11,8 @@ export {
   Globe,
   ImageryLayer,
   Ion,
+  PointPrimitiveCollection,
+  PolylineCollection,
   SingleTileImageryProvider,
   SkyAtmosphere,
 } from "cesium";

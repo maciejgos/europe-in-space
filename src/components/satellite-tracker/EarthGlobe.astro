@@ -1,4 +1,5 @@
 ---
+import AtlasPanels from "./AtlasPanels.astro";
 import Icon from "../ui/Icon.astro";
 
 const mapUrl = "/maps/natural-earth-ii.jpg";
@@ -11,7 +12,10 @@ const rotationControls = [
 ---
 
 <earth-globe aria-label="Earth globe" role="region">
-  <div class="intro"><slot name="intro" /></div>
+  <div class="intro">
+    <slot name="intro" />
+    <AtlasPanels part="discovery" />
+  </div>
 
   <div class="stage">
     <div class="viewport" data-viewport aria-hidden="true"></div>
@@ -55,6 +59,9 @@ const rotationControls = [
     </p>
   </div>
 
+  <AtlasPanels part="inspector" />
+  <AtlasPanels part="timeline" />
+
   <div class="notes">
     <div class="credit">
       <a href="https://www.naturalearthdata.com/about/terms-of-use/">Made with Natural Earth</a>
@@ -72,6 +79,7 @@ const rotationControls = [
     --atlas-gutter: clamp(1.25rem, 4vw, 4rem);
     position: relative;
     display: grid;
+    gap: var(--space-3);
     padding: var(--atlas-gutter);
     isolation: isolate;
     background: radial-gradient(ellipse at 50% 48%, #11263a 0%, var(--background) 68%);
@@ -261,6 +269,8 @@ const rotationControls = [
   }
 
   @media (min-width: 1000px) {
+    earth-globe { padding-bottom: calc(var(--atlas-gutter) + 2.75rem); }
+
     .intro, .stage, .tools, .notes {
       grid-area: 1 / 1;
     }
@@ -306,6 +316,7 @@ const rotationControls = [
 
     .notes {
       align-self: end;
+      margin-bottom: -2.75rem;
     }
   }
 </style>
