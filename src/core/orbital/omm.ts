@@ -35,18 +35,6 @@ export const ommRecordSchema = z.looseObject({
 
 export type OmmRecord = z.infer<typeof ommRecordSchema>;
 
-/** Parse and validate a CelesTrak OMM JSON payload (an array of OMM records). */
-export function parseOmmArray(raw: unknown): OmmRecord[] {
-  const result = z.array(ommRecordSchema).safeParse(raw);
-  if (!result.success) {
-    const detail = result.error.issues
-      .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
-      .join("; ");
-    throw new OmmValidationError(`Invalid OMM JSON payload: ${detail}`);
-  }
-  return result.data;
-}
-
 const EPOCH_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?$/;
 
 /**

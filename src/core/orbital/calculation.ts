@@ -1,7 +1,6 @@
 import { eciToEcf, gstime, json2satrec, radiansToDegrees, sgp4 } from "satellite.js";
 import type { SatRec } from "satellite.js";
 import { normalizeEpoch, ommRecordSchema } from "./omm";
-import type { OrbitalDataset } from "./types";
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
@@ -88,7 +87,7 @@ function geodeticFromFixedKm({ x, y, z }: Cartesian) {
 }
 
 /** Initialize once per element set. The returned calculations use only explicit UTC instants. */
-export function initializeOrbit(dataset: Pick<OrbitalDataset, "spacecraftId" | "elements">): InitializedOrbit {
+export function initializeOrbit(dataset: { spacecraftId: string; elements: unknown }): InitializedOrbit {
   const parsed = ommRecordSchema.safeParse(dataset.elements);
   if (!parsed.success) {
     if (parsed.error.issues.some((issue) => issue.path[0] === "EPOCH")) {

@@ -3,8 +3,8 @@
 Use satellite.js 6.0.1 with its JavaScript SGP4 path and WGS-72 gravity
 constants. The input is CelesTrak GP OMM JSON with UTC epochs, TEME
 elements, Earth as the central body, and SGP4 mean-element theory. CelesTrak
-can omit those metadata fields. The supported GP ephemeris type is 0. Check initial propagation at the element
-epoch before ingestion can publish a candidate.
+can omit those metadata fields. The supported GP ephemeris type is 0. The initializer checks propagation
+at the element epoch.
 
 Return TEME-of-date Cartesian coordinates in kilometers. For each sample,
 rotate about the Z axis by negative IAU 1982 Greenwich mean sidereal time
@@ -61,8 +61,8 @@ Call `initializeOrbit(dataset)` once per element set and reuse the returned
 `calculatePosition(time)` and `sampleOrbit(start, intervalSeconds)` methods.
 They throw `OrbitCalculationError` with a stable code. A failed sample stops
 the path calculation before it returns any points. The module performs no
-network or clock reads. Ingestion calls the same initializer and records a
-validation failure before any attempt to publish unusable elements.
+network or clock reads. A future ingestion pipeline can use the initializer
+to reject unusable elements before publication.
 
 The 6.0.1 package provides a JavaScript ESM bundle for browser bundlers
 and a CommonJS entry point for Node. The 7.2.0 root entry also exposes
