@@ -8,6 +8,26 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    // Official CelesTrak GP endpoint (OMM JSON via ?CATNR={id}&FORMAT=JSON).
+    // Overridable to point local dev/tests at a fixture server.
+    "CELESTRAK_BASE_URL": "https://celestrak.org/NORAD/elements/gp.php"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "europe-in-space",
+      // Local placeholder only. Before deploying, create the real database
+      // (`wrangler d1 create europe-in-space`) and put its ID here, then apply
+      // worker/migrations to preview and production. Remote provisioning is
+      // intentionally not part of the local integration change.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "worker/migrations"
+    }
+  ],
+  // Scheduled CelesTrak ingestion; daily UTC starting cadence (ADR-016).
+  "triggers": {
+    "crons": ["0 3 * * *"]
   }
-  // Add a D1 binding and Cron trigger when ingestion is implemented.
 }
