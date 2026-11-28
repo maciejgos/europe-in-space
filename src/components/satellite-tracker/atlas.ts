@@ -52,6 +52,7 @@ export function connectAtlas(root: HTMLElement, widget: CesiumWidget, signal: Ab
   const search = get<HTMLInputElement>("data-atlas-search");
   const buttons = [...root.querySelectorAll<HTMLButtonElement>("[data-spacecraft]")];
   const isolate = get<HTMLInputElement>("data-atlas-isolate");
+  const follow = get<HTMLInputElement>("data-atlas-follow");
   const seek = get<HTMLInputElement>("data-atlas-seek");
   const speed = get<HTMLSelectElement>("data-atlas-speed");
   const play = get<HTMLButtonElement>("data-atlas-play");
@@ -78,6 +79,9 @@ export function connectAtlas(root: HTMLElement, widget: CesiumWidget, signal: Ab
     for (const entry of entries) {
       entry.point.position = toCartesian(entry.orbit.calculatePosition(date).positionEarthFixedM);
     }
+    if (frame && follow.checked) {
+      camera.setView({ destination: spacecraftView(), orientation: overhead });
+    }
     seek.value = String(Math.floor(seconds));
     if (clock.dateTime.slice(0, 19) !== date.toISOString().slice(0, 19)) setTime(clock, date);
     scene.requestRender();
@@ -102,12 +106,18 @@ export function connectAtlas(root: HTMLElement, widget: CesiumWidget, signal: Ab
     scene.requestRender();
   }
 
-  function locate() {
+  const overhead = { heading: 0, pitch: -Math.PI / 2, roll: 0 };
+
+  function spacecraftView() {
     const position = widget.ellipsoid.cartesianToCartographic(entries[selected].point.position);
-    const destination = Cartesian3.fromRadians(position.longitude, position.latitude, 13_500_000, widget.ellipsoid);
+    return Cartesian3.fromRadians(position.longitude, position.latitude, 13_500_000, widget.ellipsoid);
+  }
+
+  function locate() {
+    if (frame && follow.checked) return;
     camera.flyTo({
-      destination,
-      orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
+      destination: spacecraftView(),
+      orientation: overhead,
       duration: reducedMotion.matches ? 0 : 1.15,
     });
   }
@@ -144,6 +154,7 @@ export function connectAtlas(root: HTMLElement, widget: CesiumWidget, signal: Ab
       return;
     }
     if (seconds >= duration) seconds = 0;
+    if (follow.checked) camera.cancelFlight();
     play.textContent = "Pause";
     let previous = performance.now();
     const tick = (now: number) => {
@@ -186,6 +197,14 @@ export function connectAtlas(root: HTMLElement, widget: CesiumWidget, signal: Ab
   }, { signal });
   back.addEventListener("click", () => showChapter(chapter - 1), { signal });
   next.addEventListener("click", () => showChapter(chapter + 1), { signal });
+  follow.addEventListener("change", () => {
+    if (frame && follow.checked) camera.cancelFlight();
+  }, { signal });
+  root.addEventListener("click", (event) => {
+    if (frame && follow.checked && event.target instanceof Element && event.target.closest("[data-camera]")) {
+      follow.checked = false;
+    }
+  }, { signal, capture: true });
   play.addEventListener("click", togglePlayback, { signal });
   seek.addEventListener("input", () => {
     seconds = Number(seek.value);

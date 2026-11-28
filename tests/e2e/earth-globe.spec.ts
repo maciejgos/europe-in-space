@@ -159,8 +159,13 @@ test('explores Sentinel-2 spacecraft and replays archived positions on the same 
   await page.getByRole('slider', { name: 'Orbit replay time' }).press('End');
   await expect(clock).not.toHaveAttribute('datetime', initialTime!);
   const endTime = await clock.getAttribute('datetime');
+  const follow = page.getByRole('checkbox', { name: 'Follow spacecraft during playback' });
+  await expect(follow).toBeChecked();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(clock).not.toHaveAttribute('datetime', endTime!);
+  await page.getByRole('button', { name: 'Reset to Europe' }).click();
+  await expect(follow).not.toBeChecked();
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
   await page.getByRole('button', { name: 'Pause' }).click();
 
   await page.getByRole('button', { name: 'Guided story' }).click();
