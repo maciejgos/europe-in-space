@@ -1,0 +1,143 @@
+---
+import { spacecraft } from "./atlas-catalog";
+interface Props { part: "discovery" | "inspector" | "timeline" }
+
+const { part } = Astro.props;
+---
+
+{part === "discovery" && <div class="discovery" data-atlas hidden>
+  <details>
+    <summary>Mission browser</summary>
+    <div class="browser">
+      <label for="atlas-search">Find spacecraft</label>
+      <input id="atlas-search" type="search" placeholder="Name or NORAD ID" data-atlas-search />
+      <div class="catalog" aria-label="Sentinel-2 constellation">
+        {spacecraft.map((item, index) => (
+          <button type="button" data-spacecraft={item.id} aria-pressed={index === 0 ? "true" : "false"}>
+            {item.name}
+            <span>{item.elements.NORAD_CAT_ID}</span>
+          </button>
+        ))}
+      </div>
+      <p data-no-results hidden role="status">No spacecraft match your search.</p>
+    </div>
+  </details>
+  <button type="button" data-atlas-story aria-expanded="false" aria-controls="atlas-story">Guided story</button>
+</div>}
+
+{part === "inspector" && <section class="inspector" data-atlas-inspector hidden aria-labelledby="atlas-spacecraft" aria-live="polite">
+  <p class="context">Copernicus · Earth observation</p>
+  <h2 id="atlas-spacecraft" data-atlas-name></h2>
+  <dl>
+    <div><dt>Orbit</dt><dd>Sun-synchronous</dd></div>
+    <div><dt>Inclination</dt><dd data-atlas-inclination></dd></div>
+    <div><dt>Period</dt><dd data-atlas-period></dd></div>
+  </dl>
+  <button type="button" data-atlas-focus>Locate spacecraft</button>
+  <a href="/missions/sentinel-2/">Read about Sentinel-2</a>
+  <section id="atlas-story" hidden aria-labelledby="atlas-story-title">
+    <h3 id="atlas-story-title" data-story-title></h3>
+    <p data-story-copy></p>
+    <div class="story-nav">
+      <button type="button" data-story-back>Back</button>
+      <button type="button" data-story-next>Next</button>
+    </div>
+  </section>
+</section>}
+
+{part === "timeline" && <div class="timeline" data-atlas-time hidden>
+  <div class="playback">
+    <button type="button" data-atlas-play>Play</button>
+    <select aria-label="Playback speed" data-atlas-speed>
+      <option value="60">60×</option>
+      <option value="120">120×</option>
+      <option value="300">300×</option>
+    </select>
+    <input type="range" min="0" value="0" aria-label="Orbit replay time" data-atlas-seek />
+    <time data-atlas-clock></time>
+  </div>
+  <div class="metadata">
+    <label><input type="checkbox" data-atlas-follow checked /> Follow spacecraft during playback</label>
+    <span>Simulated positions · Archived elements</span>
+    <span>Element epoch <time data-atlas-epoch></time></span>
+    <a data-atlas-source>Space-Track via Orbinauts</a>
+    <label><input type="checkbox" data-atlas-isolate /> Show only selected spacecraft</label>
+  </div>
+</div>}
+
+<style>
+  .discovery, .inspector, .timeline {
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+    color: var(--text);
+    font-size: 0.8125rem;
+  }
+
+  .discovery {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  [hidden] { display: none; }
+
+  button, summary, select, input[type="search"] {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+  }
+
+  button, summary, select { cursor: pointer; }
+  button:hover, summary:hover, button[aria-pressed="true"] { color: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  .browser, .inspector, .timeline {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+  }
+
+  .browser {
+    width: min(16rem, calc(100vw - 2.5rem));
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .browser input { width: 100%; margin-top: 0.25rem; }
+  .catalog { display: grid; margin-top: 0.75rem; gap: 0.25rem; }
+  .catalog button { display: flex; align-items: center; justify-content: space-between; }
+  .catalog span, .context, dt, .metadata { color: var(--text-muted); }
+
+  .inspector { padding: 1rem; }
+  .inspector h2 { margin-top: 0.25rem; font-size: 1.35rem; letter-spacing: -0.025em; }
+  .inspector dl { margin: 0.75rem 0; }
+  .inspector dl div { display: flex; justify-content: space-between; gap: 1rem; padding-block: 0.25rem; }
+  dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .inspector a { display: block; margin-top: 0.5rem; }
+  a { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 0.2em; }
+  #atlas-story { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+  #atlas-story p { margin-top: 0.25rem; }
+  .story-nav { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+
+  .timeline { padding: 0.625rem 0.75rem; }
+  .playback, .metadata { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.75rem; }
+  .playback input { flex: 1 1 7rem; min-width: 0; min-height: 44px; accent-color: var(--accent); }
+  .playback time { font-variant-numeric: tabular-nums; }
+  .metadata { margin-top: 0.5rem; }
+  .metadata label { display: flex; align-items: center; gap: 0.3rem; }
+  .metadata input { accent-color: var(--accent); }
+
+  @media (min-width: 1000px) {
+    .discovery { flex-wrap: nowrap; align-items: start; }
+    .discovery details { position: relative; flex-shrink: 0; }
+    .browser { position: absolute; }
+    .timeline { justify-self: center; width: min(100%, 64rem); }
+  }
+</style>

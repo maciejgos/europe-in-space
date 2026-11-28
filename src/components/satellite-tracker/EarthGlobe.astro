@@ -1,0 +1,321 @@
+---
+import AtlasPanels from "./AtlasPanels.astro";
+import Icon from "../ui/Icon.astro";
+
+const mapUrl = "/maps/natural-earth-ii.jpg";
+const rotationControls = [
+  { action: "left", label: "Rotate left" },
+  { action: "right", label: "Rotate right" },
+  { action: "up", label: "Rotate up" },
+  { action: "down", label: "Rotate down" },
+];
+---
+
+<earth-globe aria-label="Earth globe" role="region">
+  <div class="intro">
+    <slot name="intro" />
+    <AtlasPanels part="discovery" />
+  </div>
+
+  <div class="stage">
+    <div class="viewport" data-viewport aria-hidden="true"></div>
+    <figure class="static-map" data-static-map>
+      <img
+        src={mapUrl}
+        width="2048"
+        height="1024"
+        alt="World physical map showing continents, oceans and shaded relief, with Europe near the centre."
+      />
+      <figcaption>
+        <span>Static world map</span>
+        <p class="hint status" data-status role="status"></p>
+        <noscript><p class="hint status">The interactive globe requires JavaScript.</p></noscript>
+      </figcaption>
+    </figure>
+  </div>
+
+  <div class="rail">
+    <AtlasPanels part="inspector" />
+    <div class="tools" data-interactive hidden>
+      <div class="controls" role="group" aria-label="Globe controls">
+        <div class="rotation">
+          {rotationControls.map(({ action, label }) => (
+            <button type="button" data-camera={action} aria-label={label} title={label}>
+              <Icon name="arrow-right" size={19} />
+            </button>
+          ))}
+        </div>
+        <div class="zoom">
+          <button type="button" data-camera="in" aria-label="Zoom in" title="Zoom in">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14" /></svg>
+          </button>
+          <button type="button" data-camera="out" aria-label="Zoom out" title="Zoom out">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+          </button>
+        </div>
+        <button class="reset" type="button" data-camera="reset">Reset to Europe</button>
+      </div>
+      <p class="hint">
+        Drag to rotate.{" "}
+        <span class="wheel-hint">Scroll to zoom.</span><span class="pinch-hint">Pinch to zoom.</span>
+      </p>
+    </div>
+  </div>
+  <AtlasPanels part="timeline" />
+
+  <div class="notes">
+    <div class="credit">
+      <a href="https://www.naturalearthdata.com/about/terms-of-use/">Made with Natural Earth</a>
+      <div class="engine-credit" data-engine-credit></div>
+    </div>
+  </div>
+</earth-globe>
+
+<script>
+  import "./earth-globe";
+</script>
+
+<style>
+  earth-globe {
+    --atlas-gutter: clamp(1.25rem, 4vw, 4rem);
+    position: relative;
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--atlas-gutter);
+    isolation: isolate;
+    background: radial-gradient(ellipse at 50% 48%, #11263a 0%, var(--background) 68%);
+  }
+
+  .intro {
+    position: relative;
+    z-index: 1;
+    justify-self: start;
+  }
+
+  .stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    height: clamp(16.5rem, calc(100vw - 2.5rem), 36rem);
+  }
+
+  .viewport {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    cursor: grab;
+  }
+
+  .viewport:active {
+    cursor: grabbing;
+  }
+
+  [data-ready] .viewport {
+    visibility: visible;
+  }
+
+  .viewport :global(canvas) {
+    display: block;
+    touch-action: none;
+  }
+
+  .static-map {
+    width: min(100%, 44rem);
+    margin: 0;
+  }
+
+  .static-map img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+  }
+
+  .static-map figcaption {
+    margin-top: var(--space-2);
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+
+  .status:not(:empty) {
+    margin-top: var(--space-1);
+  }
+
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .tools {
+    position: relative;
+    z-index: 1;
+    order: -1;
+    text-align: center;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .rotation, .zoom {
+    display: grid;
+    grid-auto-flow: column;
+    padding: 1px;
+    background: var(--border-strong);
+    border-radius: var(--radius-sm);
+    gap: 1px;
+  }
+
+  .controls button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: var(--space-2);
+    border: 0;
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  :is(.rotation, .zoom) button:first-child { border-radius: 9px 0 0 9px; }
+  :is(.rotation, .zoom) button:last-child { border-radius: 0 9px 9px 0; }
+
+  .controls button:hover {
+    background: var(--surface-raised);
+    color: var(--accent-hover);
+  }
+
+  .controls button:focus-visible {
+    z-index: 1;
+    outline-offset: -3px;
+  }
+
+  [data-camera="left"] :global(.icon) { rotate: 180deg; }
+  [data-camera="up"] :global(.icon) { rotate: -90deg; }
+  [data-camera="down"] :global(.icon) { rotate: 90deg; }
+
+  .controls svg {
+    width: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+
+  .controls .reset {
+    padding-inline: var(--space-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--accent-hover);
+    font-size: 0.8125rem;
+    font-weight: 550;
+  }
+
+  .hint, .credit {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+
+  .tools .hint {
+    margin-top: var(--space-2);
+    text-wrap: balance;
+  }
+
+  .pinch-hint {
+    display: none;
+  }
+
+  @media (pointer: coarse) {
+    .wheel-hint { display: none; }
+    .pinch-hint { display: inline; }
+  }
+
+  .notes {
+    position: relative;
+    z-index: 1;
+    justify-self: start;
+  }
+
+  .credit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-3);
+  }
+
+  .credit a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .engine-credit :global(.cesium-widget-credits) {
+    position: static;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-shadow: none;
+  }
+
+  earth-globe:not([data-ready]) .engine-credit {
+    display: none;
+  }
+
+  @media (max-width: 359px) {
+    .rotation, .zoom { padding-inline: 0; }
+    .controls { column-gap: var(--space-1); }
+  }
+
+  @media (min-width: 1000px) {
+    earth-globe { padding-block: clamp(1.5rem, 3vw, 2.5rem) 0; }
+
+    .intro, .stage, .rail {
+      grid-area: 1 / 1;
+    }
+
+    .intro {
+      align-self: start;
+      max-width: clamp(12rem, 20vw, 18rem);
+      pointer-events: none;
+    }
+
+    .stage {
+      justify-self: center;
+      width: calc(100% + 2 * var(--atlas-gutter));
+      height: clamp(30rem, calc(100svh - 15rem), 54rem);
+    }
+
+    .static-map {
+      width: min(100%, 44rem, 75svh);
+    }
+
+    .rail {
+      position: relative;
+      justify-self: end;
+      align-self: start;
+      width: 14rem;
+      pointer-events: none;
+    }
+
+    .tools {
+      order: 0;
+      align-self: end;
+      width: 100%;
+      text-align: right;
+      pointer-events: auto;
+    }
+
+    .controls {
+      justify-content: end;
+    }
+
+  }
+</style>

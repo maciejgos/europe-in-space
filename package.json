@@ -19,8 +19,10 @@
     "@astrojs/react": "^7.1.9",
     "@tailwindcss/vite": "^4.3.5",
     "astro": "^7.4.12",
+    "cesium": "1.147.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "satellite.js": "6.0.1",
     "tailwindcss": "^4.3.5",
     "zod": "^4.6.7"
   },

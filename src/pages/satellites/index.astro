@@ -1,0 +1,37 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import EarthGlobe from "../../components/satellite-tracker/EarthGlobe.astro";
+
+const description = "Explore European spacecraft and their paths around Earth.";
+---
+
+<BaseLayout title="Explore Orbits" description={description}>
+  <EarthGlobe>
+    <header slot="intro" class="globe-heading">
+      <h1>Explore Orbits</h1>
+      <p>{description}</p>
+    </header>
+  </EarthGlobe>
+</BaseLayout>
+
+<style>
+  :global(.page-main:has(> earth-globe)) {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+  }
+
+  .globe-heading h1 {
+    font-size: clamp(2rem, 4vw, 4rem);
+    font-weight: 600;
+    line-height: 1.02;
+    text-wrap: balance;
+    letter-spacing: -0.035em;
+  }
+
+  .globe-heading p {
+    margin-top: var(--space-2);
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+  }
+</style>

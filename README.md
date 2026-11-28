@@ -119,8 +119,8 @@ The first milestone focuses on demonstrating the platform's core experience.
 - [x] Create the initial design system and responsive layout.
 - [x] Implement the first European mission detail page.
 - [ ] Integrate CelesTrak orbital data.
-- [ ] Implement browser-based orbital calculations.
-- [ ] Build an interactive 3D Earth visualization.
+- [x] Implement browser-based orbital calculations.
+- [x] Build an interactive 3D Earth visualization at `/satellites/`.
 - [ ] Display a real spacecraft's predicted position and orbit.
 - [ ] Add source attribution and data freshness indicators.
 - [ ] Establish automated testing and CI/CD.
@@ -193,7 +193,7 @@ Design rationale, scope and asset information are in [the initial design brief](
 
 Other checks are available with `pnpm check`, `pnpm test`, `pnpm build`, and `pnpm test:e2e`. Install the browser for the end-to-end test once with `pnpm exec playwright install chromium`.
 
-For a local preview of the Worker and built static assets, run `pnpm build` followed by `pnpm exec wrangler dev`. The Worker reserves `/api/*`, which currently returns 404. D1, scheduled ingestion, orbital calculations, and the tracker have not yet been implemented; deployment requires Cloudflare configuration and provisioning.
+For a local preview of the Worker and built static assets, run `pnpm build` followed by `pnpm exec wrangler dev`. The Worker reserves `/api/*`, which currently returns 404. The [browser calculation module](docs/designs/orbital-calculations.md) provides SGP4 positions and orbit samples. D1, scheduled ingestion, and the tracker are pending.
 
 ### Cloudflare deployments
 
