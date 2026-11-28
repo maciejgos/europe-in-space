@@ -8,5 +8,10 @@
     "types": ["@cloudflare/workers-types"],
     "skipLibCheck": true
   },
-  "include": ["worker/**/*.ts"]
+  "include": [
+    "worker/**/*.ts",
+    "src/config/**/*.ts",
+    "src/core/**/*.ts",
+    "src/integrations/**/*.ts"
+  ]
 }
