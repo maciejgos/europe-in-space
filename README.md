@@ -120,7 +120,7 @@ The first milestone focuses on demonstrating the platform's core experience.
 - [x] Implement the first European mission detail page.
 - [ ] Integrate CelesTrak orbital data.
 - [x] Implement browser-based orbital calculations.
-- [ ] Build an interactive 3D Earth visualization.
+- [x] Build an interactive 3D Earth visualization at `/satellites/`.
 - [ ] Display a real spacecraft's predicted position and orbit.
 - [ ] Add source attribution and data freshness indicators.
 - [ ] Establish automated testing and CI/CD.

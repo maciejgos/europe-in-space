@@ -6,19 +6,16 @@ import Button from "../components/ui/Button.astro";
 import { sections } from "../data/site";
 export function getStaticPaths() {
   return sections
-    .filter((s) => s.slug !== "missions")
+    .filter((s) => s.slug !== "missions" && s.slug !== "satellites")
     .map((s) => ({ params: { section: s.slug }, props: { section: s } }));
 }
 const { section } = Astro.props;
-const satellite = section.slug === "satellites";
 const imageFocus =
-  section.slug === "satellites"
-    ? "75% 42%"
-    : section.slug === "observatories"
-      ? "28% 20%"
-      : section.slug === "imagery"
-        ? "65% 58%"
-        : "58% 48%";
+  section.slug === "observatories"
+    ? "28% 20%"
+    : section.slug === "imagery"
+      ? "65% 58%"
+      : "58% 48%";
 ---
 
 <BaseLayout title={section.title}>
@@ -30,13 +27,9 @@ const imageFocus =
         description={section.summary}
       />
       <div class="coming-note">
-        <Badge tone="accent">
-          {satellite ? "Coming in First Orbit" : "On the horizon"}
-        </Badge>
+        <Badge tone="accent">On the horizon</Badge>
         <p>
-          {satellite
-            ? "The tracker is in development. It will show predicted spacecraft positions from public orbital elements, with a source and timestamp for every orbit."
-            : "This part of Europe in Space is taking shape. The first release starts with a European mission and the predicted orbit of one of its spacecraft."}
+          This part of Europe in Space is taking shape. The first release starts with a European mission and the predicted orbit of one of its spacecraft.
         </p>
       </div>
       <div class="row">
@@ -56,14 +49,6 @@ const imageFocus =
         style={`object-position: ${imageFocus}`}
         alt="Illustrative view of Europe’s city lights from space"
       />
-      {section.slug === "satellites" && (
-        <svg class="section-plate" viewBox="0 0 400 400" fill="none" aria-hidden="true">
-          <ellipse cx="200" cy="200" rx="158" ry="68" transform="rotate(-24 200 200)" stroke="#86ccff" stroke-opacity="0.48" stroke-width="1.2" />
-          <ellipse cx="200" cy="200" rx="146" ry="86" transform="rotate(32 200 200)" stroke="#58b6fa" stroke-opacity="0.32" stroke-width="1" stroke-dasharray="4 5" />
-          <circle cx="312" cy="118" r="4.5" fill="#f4f6fa" />
-          <circle cx="312" cy="118" r="11" fill="#58b6fa" fill-opacity="0.28" />
-        </svg>
-      )}
       {section.slug === "observatories" && (
         <svg class="section-plate" viewBox="0 0 400 400" fill="none" aria-hidden="true">
           <circle cx="200" cy="186" r="118" stroke="#86ccff" stroke-opacity="0.28" stroke-width="1" stroke-dasharray="2 6" />
@@ -86,10 +71,7 @@ const imageFocus =
         </svg>
       )}
       <figcaption class="image-caption">
-        Illustrative artwork ·{" "}
-        {satellite
-          ? "No live orbital data connected"
-          : "Independent exploration. Open space data."}
+        Illustrative artwork · Independent exploration. Open space data.
       </figcaption>
     </figure>
   </div>
