@@ -1,29 +1,13 @@
-import { handleApiRequest } from "./api/index";
-import type { Env } from "./env";
-import { runScheduledIngestion } from "./ingestion/scheduled";
+interface Env {
+  ASSETS: Fetcher;
+}
 
-export type { Env };
-
+// API routes are reserved for the future cached orbital-data service.
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    if (new URL(request.url).pathname.startsWith("/api/")) {
-      return handleApiRequest(request, env);
+  fetch(request: Request, env: Env): Promise<Response> | Response {
+    if (new URL(request.url).pathname.startsWith('/api/')) {
+      return Response.json({ error: 'Not found' }, { status: 404 });
     }
     return env.ASSETS.fetch(request);
-  },
-
-  // Cron Trigger: scheduled CelesTrak ingestion (daily UTC, see wrangler.jsonc).
-  // Failures are recorded in D1 ingestion_runs and never delete the last
-  // valid dataset (ADR-016).
-  async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(
-      runScheduledIngestion(env).then((summary) => {
-        console.log(
-          `CelesTrak ingestion (${event.cron}) summary: ${JSON.stringify(
-            summary.runs.map((run) => ({ id: run.noradCatalogId, outcome: run.outcome })),
-          )}`,
-        );
-      }),
-    );
   },
 } satisfies ExportedHandler<Env>;
