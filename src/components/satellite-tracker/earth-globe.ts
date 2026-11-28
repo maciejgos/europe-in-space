@@ -139,7 +139,7 @@ class EarthGlobe extends HTMLElement {
 
       const reset = () => {
         camera.setView({
-          destination: Cartesian3.fromDegrees(15, 50, 13_500_000, ellipsoid),
+          destination: Cartesian3.fromDegrees(15, 50, 15_500_000, ellipsoid),
           orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
         });
       };

@@ -27,27 +27,31 @@ test('the desktop globe renders, rotates, zooms and resets using only local reso
 
   const canvas = page.locator('earth-globe canvas');
   await expect(canvas).toBeVisible({ timeout: 20_000 });
-  const initial = await canvas.screenshot();
+  const box = (await canvas.boundingBox())!;
+  // The desktop canvas now extends behind the controls. Exclude their focus rings.
+  const captureGlobe = () => page.screenshot({
+    clip: { x: box.x + box.width * 0.25, y: box.y, width: box.width * 0.5, height: box.height },
+  });
+  const initial = await captureGlobe();
   const rotate = page.getByRole('button', { name: 'Rotate right' });
   await rotate.focus();
   await page.keyboard.press('Enter');
-  await expect.poll(async () => (await canvas.screenshot()).equals(initial)).toBe(false);
-  const rotated = await canvas.screenshot();
+  await expect.poll(async () => (await captureGlobe()).equals(initial)).toBe(false);
+  const rotated = await captureGlobe();
 
   await page.getByRole('button', { name: 'Zoom in' }).press('Space');
-  await expect.poll(async () => (await canvas.screenshot()).equals(rotated)).toBe(false);
+  await expect.poll(async () => (await captureGlobe()).equals(rotated)).toBe(false);
   await page.getByRole('button', { name: 'Reset to Europe' }).press('Enter');
-  await expect.poll(async () => (await canvas.screenshot()).equals(initial)).toBe(true);
+  await expect.poll(async () => (await captureGlobe()).equals(initial)).toBe(true);
 
-  const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 6 });
   await page.mouse.up();
-  await expect.poll(async () => (await canvas.screenshot()).equals(initial)).toBe(false);
-  const dragged = await canvas.screenshot();
+  await expect.poll(async () => (await captureGlobe()).equals(initial)).toBe(false);
+  const dragged = await captureGlobe();
   await page.mouse.wheel(0, -120);
-  await expect.poll(async () => (await canvas.screenshot()).equals(dragged)).toBe(false);
+  await expect.poll(async () => (await captureGlobe()).equals(dragged)).toBe(false);
 
   expect(failures).toEqual([]);
   expect([...urls].filter((url) => /^https?:/.test(url) && new URL(url).origin !== baseURL)).toEqual([]);
@@ -130,4 +134,40 @@ test('renders the static map when the globe module fails to load', async ({ page
   await expect(page.getByRole('status').filter({ hasText: 'interactive globe is unavailable' })).toBeVisible();
   await expect(page.getByRole('img', { name: /World physical map/ })).toBeVisible();
   await expect(page.getByRole('group', { name: 'Globe controls' })).toBeHidden();
+});
+
+test('explores Sentinel-2 spacecraft and replays archived positions on the same globe', async ({ page }) => {
+  await page.goto('/satellites/');
+  const canvas = page.locator('earth-globe canvas');
+  await expect(canvas).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: 'Sentinel-2B' })).toBeVisible();
+  await page.getByText('Mission browser', { exact: true }).click();
+  const search = page.getByRole('searchbox', { name: 'Find spacecraft' });
+  await search.fill('missing');
+  await expect(page.getByText('No spacecraft match your search.')).toBeVisible();
+  await search.fill('60989');
+  await expect(page.getByRole('button', { name: /Sentinel-2B/ })).toBeHidden();
+  await page.getByRole('button', { name: /Sentinel-2C/ }).click();
+  await expect(page.getByRole('heading', { name: 'Sentinel-2C' })).toBeVisible();
+  await expect(page.locator('[data-atlas-epoch]')).toHaveAttribute('datetime', /^2026-11-23/);
+  await expect(page.getByRole('link', { name: 'Space-Track via Orbinauts' })).toHaveAttribute('href', /sentinel-2c/);
+  await page.getByRole('checkbox', { name: 'Show only selected spacecraft' }).check();
+  await page.getByText('Mission browser', { exact: true }).click();
+
+  const clock = page.locator('[data-atlas-clock]');
+  const initialTime = await clock.getAttribute('datetime');
+  await page.getByRole('slider', { name: 'Orbit replay time' }).press('End');
+  await expect(clock).not.toHaveAttribute('datetime', initialTime!);
+  const endTime = await clock.getAttribute('datetime');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(clock).not.toHaveAttribute('datetime', endTime!);
+  await page.getByRole('button', { name: 'Pause' }).click();
+
+  await page.getByRole('button', { name: 'Guided story' }).click();
+  await expect(page.getByRole('heading', { name: 'Two spacecraft, one mission' })).toBeVisible();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Keeping the record going' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sentinel-2C' })).toBeVisible();
+  await expect(canvas).toBeVisible();
+  await expect(page).toHaveURL('/satellites/');
 });
