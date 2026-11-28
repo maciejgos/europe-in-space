@@ -83,6 +83,33 @@ describe("scheduled ingestion pipeline (local D1 + fixture upstream)", () => {
     expect(stored?.fetchedAt).toBe("2026-01-17T03:00:00.000Z"); // retrieval timestamp preserved
   });
 
+  it("preserves the cached dataset when newer OMM cannot initialize SGP4", async () => {
+    const env = makeEnv(createLocalD1());
+    const repo = createD1OrbitalRepository(env.DB);
+    await runScheduledIngestion(env, {
+      fetchImpl: fetchServing({ "40697": () => okJsonResponse("sentinel-2a.omm.json") }),
+      now,
+    });
+    const previous = await repo.findLatest(40697);
+    expect(previous).not.toBeNull();
+
+    const [candidate] = JSON.parse(fixtureText("sentinel-2a-newer.omm.json"));
+    const { runs } = await runScheduledIngestion(env, {
+      fetchImpl: fetchServing({
+        "40697": () => Response.json([{ ...candidate, MEAN_MOTION: 25 }]),
+        "42063": () => okJsonResponse("sentinel-2b.omm.json"),
+      }),
+      now,
+    });
+    expect(runs[0]).toMatchObject({
+      noradCatalogId: 40697,
+      outcome: "validation_error",
+      detail: expect.stringContaining("SGP4"),
+    });
+    expect(runs[1].outcome).toBe("published");
+    expect(await repo.findLatest(40697)).toEqual(previous);
+  });
+
   it("skips an older epoch arriving after a newer one", async () => {
     const env = makeEnv(createLocalD1());
     await runScheduledIngestion(env, {

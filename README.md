@@ -119,7 +119,7 @@ The first milestone focuses on demonstrating the platform's core experience.
 - [x] Create the initial design system and responsive layout.
 - [x] Implement the first European mission detail page.
 - [x] Integrate CelesTrak orbital data.
-- [ ] Implement browser-based orbital calculations.
+- [x] Implement browser-based orbital calculations.
 - [ ] Build an interactive 3D Earth visualization.
 - [ ] Display a real spacecraft's predicted position and orbit.
 - [ ] Add source attribution and data freshness indicators.
@@ -193,7 +193,7 @@ Design rationale, scope and asset information are in [the initial design brief](
 
 Other checks are available with `pnpm check`, `pnpm test`, `pnpm build`, and `pnpm test:e2e`. Install the browser for the end-to-end test once with `pnpm exec playwright install chromium`.
 
-For a local preview of the Worker and built static assets, run `pnpm build` followed by `pnpm exec wrangler dev`. The Worker serves `GET /api/satellites/{noradCatalogId}/orbital-elements` from D1 and ingests CelesTrak OMM JSON on the configured cron trigger. Apply the local D1 migration with `pnpm exec wrangler d1 migrations apply DB --local`; to exercise a run during development, start `pnpm exec wrangler dev --test-scheduled` and request `http://localhost:8787/__scheduled?cron=0%203%20*%20*%20*`. Browser orbital calculations and the tracker have not yet been implemented. Remote provisioning is still required before release: create the database (`pnpm exec wrangler d1 create europe-in-space`), replace the placeholder `database_id` in `wrangler.jsonc`, apply `worker/migrations` remotely, and verify the cron trigger and API in the deployed environment. See [the CelesTrak ingestion design](docs/designs/celestrak-orbital-ingestion.md).
+For a local preview of the Worker and built static assets, run `pnpm build` followed by `pnpm exec wrangler dev`. The Worker serves `GET /api/satellites/{noradCatalogId}/orbital-elements` from D1 and ingests CelesTrak OMM JSON on the configured cron trigger. Apply the local D1 migration with `pnpm exec wrangler d1 migrations apply DB --local`; to exercise a run during development, start `pnpm exec wrangler dev --test-scheduled` and request `http://localhost:8787/__scheduled?cron=0%203%20*%20*%20*`. The browser-compatible calculation module provides SGP4 positions and orbit samples. The interactive tracker is pending. See [the orbital calculation design](docs/designs/orbital-calculations.md). Remote provisioning is still required before release: create the database (`pnpm exec wrangler d1 create europe-in-space`), replace the placeholder `database_id` in `wrangler.jsonc`, apply `worker/migrations` remotely, and verify the cron trigger and API in the deployed environment. See [the CelesTrak ingestion design](docs/designs/celestrak-orbital-ingestion.md).
 
 ### Cloudflare deployments
 

@@ -6,6 +6,7 @@ import {
   createCelesTrakProvider,
   OmmValidationError,
 } from "../../src/integrations/celestrak/client";
+import { initializeOrbit, OrbitCalculationError } from "../../src/core/orbital/calculation";
 import type { OrbitalDataProvider, OrbitalDatasetRepository } from "../../src/core/orbital/types";
 import type { Env } from "../env";
 import {
@@ -31,7 +32,7 @@ function classify(error: unknown): { outcome: IngestionOutcome; detail: string }
   if (error instanceof CelesTrakUpstreamError) {
     return { outcome: "upstream_error", detail: error.message };
   }
-  if (error instanceof OmmValidationError) {
+  if (error instanceof OmmValidationError || error instanceof OrbitCalculationError) {
     return { outcome: "validation_error", detail: error.message };
   }
   return {
@@ -64,6 +65,7 @@ export async function ingestTrackedSpacecraft(deps: IngestionDeps): Promise<Inge
         );
       }
       epoch = dataset.epoch;
+      initializeOrbit(dataset);
       try {
         outcome = await deps.repository.publishIfNewer(dataset);
       } catch (error) {

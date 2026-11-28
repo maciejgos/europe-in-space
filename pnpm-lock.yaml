@@ -190,6 +190,9 @@ importers:
       react-dom:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
+      satellite.js:
+        specifier: 6.0.1
+        version: 6.0.1
       tailwindcss:
         specifier: ^4.3.5
         version: 4.3.5
@@ -1887,6 +1890,9 @@ packages:
     resolution: {integrity: sha512-QIiV1J9d0pzN4jeeTH4sjPy0AZ6cAy2cG0ExeoE1+U8Rvj+hR3gYkokx0YbeUNGlZqiQJJ2utcETe0oKXwzsuA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
+
+  satellite.js@6.0.1:
+    resolution: {integrity: sha512-T0qpKYSlNIH9L0yY1SRF2J6XfV9TToZuDNBXSeTW9K6fN5kwf4uidzk3+q6Rg4KVHibcLaire910C47yai0W9A==}
 
   satteri@0.11.7:
     resolution: {integrity: sha512-xDOSxkc1ew3z3IovIjmsqJaVHRXTGYJkPvx0LL/U6o90km8kSU+pmrZVvnWd5creJeE0UnvMEienlkPuYQdJaA==}
@@ -3911,6 +3917,8 @@ snapshots:
       '@rolldown/binding-wasm32-wasi': 1.2.19
       '@rolldown/binding-win32-arm64-msvc': 1.2.19
       '@rolldown/binding-win32-x64-msvc': 1.2.19
+
+  satellite.js@6.0.1: {}
 
   satteri@0.11.7:
     dependencies:
