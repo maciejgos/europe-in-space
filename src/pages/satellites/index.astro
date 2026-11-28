@@ -2,13 +2,13 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EarthGlobe from "../../components/satellite-tracker/EarthGlobe.astro";
 
-const description = "Explore Earth from space, starting over Europe.";
+const description = "Explore European spacecraft and their paths around Earth.";
 ---
 
-<BaseLayout title="Satellites" description={description}>
+<BaseLayout title="Explore Orbits" description={description}>
   <EarthGlobe>
     <header slot="intro" class="globe-heading">
-      <h1>A new perspective on Earth.</h1>
+      <h1>Explore Orbits</h1>
       <p>{description}</p>
     </header>
   </EarthGlobe>
@@ -16,13 +16,16 @@ const description = "Explore Earth from space, starting over Europe.";
 
 <style>
   :global(.page-main:has(> earth-globe)) {
-    padding-block: clamp(1.5rem, 3vw, 2.5rem) var(--space-8);
+    width: 100%;
+    max-width: none;
+    padding: 0;
   }
 
   .globe-heading h1 {
-    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
-    font-weight: 550;
-    line-height: 1.15;
+    font-size: clamp(2rem, 4vw, 4rem);
+    font-weight: 600;
+    line-height: 1.02;
+    text-wrap: balance;
     letter-spacing: -0.035em;
   }
 

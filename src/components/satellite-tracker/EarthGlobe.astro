@@ -69,8 +69,10 @@ const rotationControls = [
 
 <style>
   earth-globe {
+    --atlas-gutter: clamp(1.25rem, 4vw, 4rem);
     position: relative;
     display: grid;
+    padding: var(--atlas-gutter);
     isolation: isolate;
     background: radial-gradient(ellipse at 50% 48%, #11263a 0%, var(--background) 68%);
   }
@@ -86,7 +88,7 @@ const rotationControls = [
     display: grid;
     place-items: center;
     min-width: 0;
-    height: clamp(16.5rem, calc(100vw - 2.75rem), 32rem);
+    height: clamp(16.5rem, calc(100vw - 2.5rem), 36rem);
   }
 
   .viewport {
@@ -265,13 +267,14 @@ const rotationControls = [
 
     .intro {
       align-self: start;
-      max-width: clamp(13rem, 22vw, 19rem);
+      max-width: clamp(12rem, 20vw, 18rem);
+      pointer-events: none;
     }
 
     .stage {
       justify-self: center;
-      width: min(69%, 49rem);
-      height: clamp(28rem, min(calc(100svh - 10rem), 61vw), 49rem);
+      width: calc(100% + 2 * var(--atlas-gutter));
+      height: clamp(36rem, calc(100svh - 13rem), 59rem);
     }
 
     .static-map {

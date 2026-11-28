@@ -20,8 +20,8 @@ test('the desktop globe renders, rotates, zooms and resets using only local reso
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Satellites' }).click();
   await expect(page).toHaveURL('/satellites/');
-  await expect(page).toHaveTitle('Satellites | Europe in Space');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('A new perspective on Earth.');
+  await expect(page).toHaveTitle('Explore Orbits | Europe in Space');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Explore Orbits');
   await expect(page.getByRole('button', { name: 'Search Europe in Space' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Made with Natural Earth' })).toBeVisible();
 
